@@ -1,0 +1,7 @@
+id,date,category,description,amount
+T-001,2026-10-01,Operations,Laptop supplies,250.00
+T-002,2026-10-02,Operations,Workspace utilities,640.00
+T-003,2026-10-03,Logistics,Transport to field site,500.00
+T-004,2026-10-05,Logistics,Additional transport,390.00
+T-005,2026-10-08,Community,Community materials,275.00
+T-006,2026-10-09,Outreach,Unbudgeted activity,80.00
