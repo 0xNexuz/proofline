@@ -10,11 +10,11 @@
 - [x] Independent numbers are reproducible: budget 3000.00; actual 2135.00; logistics 890.00 exceeds budget 700.00; Outreach unbudgeted 80.00.
 - [x] Workbook displays formulas with values; compare row outputs to deterministic engine.
 - [x] Edit a cell; save; reload; confirm workbook snapshot reflects the edit.
-- [ ] No key, private data or client license appears in GitHub or browser logs. Local staged-file secret review passed; no GitHub remote exists, so GitHub cannot be checked.
+- [x] Private GitHub source, tracked-file scan and synthetic screenshot review found no credential, customer data or commercial license. Hosted browser verification used only synthetic records.
 - [x] Record durable P1 screenshots of the live Univer editor, verified claims, invalid claims and source inspection (`docs/evidence/`).
 - [x] Update build ledger and contribution map with actual test results.
 
-Local P0, P1 and P2 verification is recorded in `docs/BUILD_LEDGER.md` M-003, M-005 and M-008. Local Git was initialized for the P1 baseline. The GitHub assertion remains open because no remote exists; no GitHub content was inspected.
+Local P0, P1 and P2 verification is recorded in `docs/BUILD_LEDGER.md` M-003, M-005 and M-008. The P2 branch is pushed to private GitHub; hosted verification is recorded in the later ledger entries.
 
 ## P1 acceptance
 
@@ -30,7 +30,7 @@ Local P0, P1 and P2 verification is recorded in `docs/BUILD_LEDGER.md` M-003, M-
 
 ## P2 acceptance
 
-- [x] Verified P1 baseline committed locally as `6a3f38f` on `main`; P2 work on local `p2/server-storage-audit`. No remote, push, deployment or paid service.
+- [x] Verified P1 baseline committed as `6a3f38f` on `main`; P2 work pushed on `p2/server-storage-audit` to private `0xNexuz/proofline`. Vercel deployment and free Neon PostgreSQL used no paid plan.
 - [x] Authentication and owner-scoped API prevent a second test account from listing or opening the first account's workbook; direct API access returned `Workbook not found`.
 - [x] Private SQLite-backed snapshots retain workbook unit ID, source records, budgets, claims, schema version, revision metadata and historical revisions. Same-origin writes, hashed credentials/sessions, retry keys and revision conflicts have automated coverage.
 - [x] Explicit P1 localStorage import preserved the local copy. A real Univer date-serial migration failure was recorded as invalid; corrected import and independent server verification succeeded.
@@ -39,6 +39,9 @@ Local P0, P1 and P2 verification is recorded in `docs/BUILD_LEDGER.md` M-003, M-
 - [x] Physical row delete and insert in Univer withheld claims; a deleted-row snapshot saved as invalid revision 3 and remained withheld after reload. Source-cell paste revalidated a changed amount. Automated tests cover inserted rows, whole-record order mapping, duplicate pasted IDs and structural command classification.
 - [ ] Actual row rearrangement through the browser UI. A row-header drag selected rows but did not move them; recognized move/reorder/sort commands are deliberately unverified until a fresh validated import. This restriction is documented in README and BUILD_LEDGER.
 - [x] `npm test` 25/25, `npm run typecheck`, `npm run build`, production HTTP 200 on `127.0.0.1:3000`.
-- [ ] Production hosting, backups, multi-host sessions, external security assessment and client license entitlement verification. These are outside this local P2 foundation.
+- [x] Hosted Vercel and PostgreSQL flow: synthetic account, real Univer E11 edit 250→305, independent actual 2135→2190, private revision 1→2, browser reload/open and two audit events. Evidence: `docs/evidence/p2-vercel-live.png`.
+- [x] Live PostgreSQL integration test: owner isolation, revisions, conflicts, retry idempotency and append-only audit trigger.
+- [ ] Tested backup/restore, multi-host sessions, external security assessment and client license entitlement verification. Hosted demo is not a production assurance claim.
+- [ ] Automatic migration of localhost localStorage or SQLite data to Vercel. Browser storage is origin-scoped; original CSVs can be uploaded at the hosted site. Same-origin localStorage import remains supported and tested locally.
 
 Never mark a box checked solely because code exists. Execute the check.

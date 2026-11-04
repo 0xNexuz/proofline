@@ -1,13 +1,15 @@
 # Proofline — Univer-first financial evidence workspace
 
-A **local P2 foundation**, not a released product. Budget and transaction CSVs become an editable Univer Sheets workbook. Proofline independently revalidates source cells after edits, links claims to supporting rows, and saves authenticated private revisions on the local server.
+A **P2 foundation and hosted demo**, not a released financial product. Budget and transaction CSVs become an editable Univer Sheets workbook. Proofline independently revalidates source cells after edits, links claims to supporting rows, and saves authenticated private revisions on local SQLite or hosted PostgreSQL.
+
+Hosted demo: https://proofline-alpha.vercel.app/ (free Vercel and Neon resources; use synthetic data for evaluation). Source: private GitHub repository `0xNexuz/proofline`.
 
 ## What's real, what's next
 - `lib/finance.ts`: TypeScript parser, validation, integer-cent calculations, exceptions and source-ID mapping; unit tests.
 - `components/UniverPanel.tsx`: real Univer Sheets via the official `UniverSheetsCorePreset`; public Facade events detect source-cell and structural edits. Facade ranges read current values and formulas for independent revalidation. Legacy browser-local snapshots remain available.
 - `lib/verification.ts` and `components/ClaimInspector.tsx`: stale/invalid claim withholding, integer-cent revalidation, stable transaction IDs, sheet-row provenance, previous/current values, calculation methods, and supporting records.
-- `lib/server/`, `app/api/`, and `components/AccountPanel.tsx`: local SQLite-backed authenticated accounts, owner-scoped APIs, private versioned snapshots, source/claim rows, revision conflicts, retry keys, and append-only application audit. The application binds to `127.0.0.1` by default.
-- **Not yet included:** hosted persistence, backup/recovery service, broad XLSX/schema support, Ant Ling in-app inference, document and slides reports, verified license-based Pro components.
+- `lib/server/`, `app/api/`, and `components/AccountPanel.tsx`: SQLite locally and PostgreSQL on Vercel, authenticated accounts, owner-scoped APIs, private versioned snapshots, source/claim rows, revision conflicts, retry keys, and append-only application audit. Local development binds to `127.0.0.1` by default.
+- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, Ant Ling in-app inference, document and slides reports, verified license-based Pro components, or a production security assessment.
 
 ## Run in Codex or locally
 
@@ -21,7 +23,7 @@ npm run dev
 
 Open `http://localhost:3000`. Select **Load synthetic demo** to see rows and formulas in a genuine Univer workbook. Edit a transaction amount or ID, inspect a claim, create a local account, save a private server revision, and reload/open it. Alternatively, upload CSVs matching `data/` templates. Existing P1 browser-local data stays in localStorage; after signing in, select **Import local P1 workbook to server** to create a separate private revision without deleting the local copy.
 
-Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Hosted runs use PostgreSQL through a private `DATABASE_URL` (or `POSTGRES_URL`) supplied by the platform; Vercel refuses to start workbook storage without one. The local SQLite database is not automatically copied to PostgreSQL. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
+Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Hosted runs use PostgreSQL through a private `DATABASE_URL` (or `POSTGRES_URL`) supplied by the platform; Vercel refuses to start workbook storage without one. The local SQLite database is not automatically copied to PostgreSQL. Browser localStorage is origin-scoped: localhost P1 copies cannot be read directly by the hosted site. Upload the original CSVs on the hosted site, or import a P1 browser-local copy that was saved on that same site. Neither path deletes the localhost data. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
 
 Physical row insert/delete and structural move/reorder/sort commands deliberately withhold claims until a fresh validated CSV import. The application does not certify those operations. Ordinary source-cell paste is revalidated and duplicate IDs are rejected. Do not treat the workbook's visible formulas as certified financial claims.
 
@@ -32,7 +34,7 @@ npx skills add dream-num/skills --skill univer-integrate
 npx skills add dream-num/skills --skill univer-pro-integrate
 ```
 
-The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their own manifests require the separately versioned `@univerjs/icons@1.46.0`; do not force icons to 1.3.1. Pin any future Pro SDK packages to the same coordinated SDK release (check actual availability and license rights first). On 2026-11-03, this Windows starter used Node `v24.22.1` and npm `11.19.1`. P2 passed 25 tests, typecheck, and production build; the production browser verified private save/reload, audit, ownership isolation, and physical row-delete fail-closed behavior. See `docs/BUILD_LEDGER.md` for exact evidence and limitations.
+The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their own manifests require the separately versioned `@univerjs/icons@1.46.0`; do not force icons to 1.3.1. Pin any future Pro SDK packages to the same coordinated SDK release (check actual availability and license rights first). On 2026-11-03, this Windows starter used Node `v24.22.1` and npm `11.19.1`. P2 passed 25 tests, typecheck, and production build; local and hosted browser flows verified private save/reload, audit, and real Univer edits. See `docs/BUILD_LEDGER.md` for exact evidence and limitations.
 
 ## Credentials
 
