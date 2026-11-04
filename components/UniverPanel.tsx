@@ -8,10 +8,17 @@ import type { Analysis } from '@/lib/finance';
 import { workbookMatrix } from '@/lib/finance';
 import { analyzeWorkbookGrid, isUnsupportedStructuralCommand, type GridValue, type VerificationAction, type VerificationState } from '@/lib/verification';
 import '@univerjs/preset-sheets-core/lib/index.css';
+import type * as UniverPro from '@/lib/univer-pro';
 
 type UniverSetup = ReturnType<typeof createUniver>;
 const STORAGE_KEY = 'proofline:p0:local-workbook'; // Retain P0 snapshots without migration or unverifiable metadata.
 type RemoteLoad = { sequence: number; snapshot: object; status: string; error: string | null };
+type ProModule = typeof UniverPro;
+// Univer browser license (license.txt contents). Inlined at build time; redeploy after changing it.
+const UNIVER_LICENSE = (process.env.NEXT_PUBLIC_UNIVER_LICENSE ?? '').trim();
+// Local-only switch to try licensed features without a license; Univer then shows its watermark.
+const PRO_PREVIEW = process.env.NEXT_PUBLIC_UNIVER_PRO_PREVIEW === '1';
+const PRO_ENABLED = UNIVER_LICENSE.length > 0 || PRO_PREVIEW;
 
 export default function UniverPanel({ analysis, version, verification, onVerification, remoteLoad,
   serverUser, selectedRevision, onServerSave, restoreLocalInitially }: {
@@ -34,6 +41,8 @@ export default function UniverPanel({ analysis, version, verification, onVerific
   const unsupportedRef = useRef(false);
   const unverifiedReasonRef = useRef('A structural worksheet edit needs a fresh validated CSV import before claims can be verified');
   const [ready, setReady] = useState(false);
+  const proRef = useRef<ProModule | null>(null);
+  const [proMode, setProMode] = useState<'off' | 'licensed' | 'preview'>('off');
   const [notice, setNotice] = useState('Initializing Univer Sheets…');
 
   useEffect(() => {
@@ -78,13 +87,28 @@ export default function UniverPanel({ analysis, version, verification, onVerific
     };
     scheduleRef.current = scheduleValidation;
 
+    let disposed = false;
+    const init = async () => {
     try {
+      let pro: ReturnType<ProModule['proPresets']> | null = null;
+      if (PRO_ENABLED) {
+        try {
+          const mod = await import('@/lib/univer-pro');
+          pro = mod.proPresets(UNIVER_LICENSE);
+          proRef.current = mod;
+        } catch (error) {
+          proRef.current = null;
+          console.error('Univer licensed features could not load; continuing with open-source Sheets.', error);
+        }
+        if (disposed) return;
+      }
       sdk = createUniver({
         locale: LocaleType.EN_US,
-        locales: { [LocaleType.EN_US]: mergeLocales(UniverPresetSheetsCoreEnUS) },
-        presets: [UniverSheetsCorePreset({ container })],
+        locales: { [LocaleType.EN_US]: mergeLocales(UniverPresetSheetsCoreEnUS, ...(pro?.locales ?? [])) },
+        presets: [UniverSheetsCorePreset({ container }), ...(pro?.presets ?? [])],
       });
       sdkRef.current = sdk;
+      setProMode(pro ? (UNIVER_LICENSE ? 'licensed' : 'preview') : 'off');
       let stored: object | undefined;
       try {
         const raw = restoreLocalInitially ? window.localStorage.getItem(STORAGE_KEY) : null;
@@ -122,7 +146,10 @@ export default function UniverPanel({ analysis, version, verification, onVerific
       setNotice(`Univer initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       onVerification({ type: 'invalid', error: 'Univer initialization failed' });
     }
+    };
+    void init();
     return () => {
+      disposed = true;
       generationRef.current++;
       if (timerRef.current) clearTimeout(timerRef.current);
       subscriptions.forEach(subscription => subscription.dispose());
@@ -148,6 +175,13 @@ export default function UniverPanel({ analysis, version, verification, onVerific
       const matrix = workbookMatrix(analysis);
       sheet.getRange(`A1:E${matrix.length}`).setValues(matrix);
       setNotice(`Imported ${analysis.transactions.length} transactions. Independently revalidating the workbook…`);
+      const pro = proRef.current;
+      if (pro) {
+        void pro.insertBudgetChart(univerAPI, sheet, analysis.summaries.length).catch((error: unknown) => {
+          console.error('Budget chart could not be inserted', error);
+          setNotice(`Workbook imported, but the budget chart could not be added: ${error instanceof Error ? error.message : String(error)}`);
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       onVerification({ type: 'invalid', error: message });
@@ -214,12 +248,12 @@ export default function UniverPanel({ analysis, version, verification, onVerific
   return (
     <section className="editor-card" aria-label="Univer spreadsheet">
       <div className="editor-heading">
-        <div><span className="eyebrow">UNIVER SHEETS · REAL SDK</span><h2>Evidence workbook</h2></div>
+        <div><span className="eyebrow">UNIVER SHEETS · REAL SDK{proMode === 'licensed' ? ' · LICENSED FEATURES' : proMode === 'preview' ? ' · LICENSED FEATURES (UNLICENSED PREVIEW)' : ''}</span><h2>Evidence workbook</h2></div>
         <div className="button-row"><button type="button" onClick={() => void saveServer()} disabled={!ready || !serverUser}>Save to private server</button><button type="button" onClick={saveLocal} disabled={!ready}>Save local copy</button></div>
       </div>
       <div className="editor-host" ref={containerRef} />
       <p className="editor-status" role="status">{notice}</p>
-      <p className="fineprint">Claims use validated source cells and integer-cent arithmetic. Spreadsheet formulas remain editable but do not certify claims. {serverUser ? `Signed in as ${serverUser}${selectedRevision ? ` · private revision ${selectedRevision}` : ' · new private workbook'}.` : 'Sign in for private server revisions.'} Structural row, column, range and sort commands withhold claims until a fresh validated import.</p>
+      <p className="fineprint">Claims use validated source cells and integer-cent arithmetic. Spreadsheet formulas remain editable but do not certify claims. {serverUser ? `Signed in as ${serverUser}${selectedRevision ? ` · private revision ${selectedRevision}` : ' · new private workbook'}.` : 'Sign in for private server revisions.'} Structural row, column, range and sort commands withhold claims until a fresh validated import.{proMode !== 'off' ? ' The Budget vs actual chart is drawn by Univer from the workbook formulas; certified figures stay in Claim inspection.' : ''}</p>
     </section>
   );
 }

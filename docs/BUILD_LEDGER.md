@@ -247,3 +247,17 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Evidence:** `docs/evidence/m013-landing-hero.jpg`, `docs/evidence/m013-wheel-hover.jpg`.
 - **Status:** Verified locally on branch `landing/build-artwork`; PR opened for owner review. Not merged or deployed to production.
 
+### M-014 | 2026-11-04 | Univer licensed features: Budget vs actual chart
+- **Source/trigger:** Owner received Univer's `license` (license.txt) and `licenseKey` (licenseKey.txt) and asked to integrate the SDK license. Neither file's contents were shared in chat, committed or logged.
+- **Implementation:** Added `@univerjs/preset-sheets-drawing` and `@univerjs/preset-sheets-advanced` pinned at 1.3.1 (all 76 resolved `@univerjs/*` and `@univerjs-pro/*` packages at 1.3.1; icons stays 1.46.0). `lib/univer-pro.ts` builds the presets (core, drawing, advanced with `license`) and inserts a column chart over the category block (`A3:C{3+n}`, categories vs Budget and Actual (formula), title "Budget vs actual", position G3). `components/UniverPanel.tsx` loads that module with a dynamic import only when `NEXT_PUBLIC_UNIVER_LICENSE` is set (or the local-only `NEXT_PUBLIC_UNIVER_PRO_PREVIEW=1`), so the default bundle and behaviour are unchanged. If the licensed module fails to load, the editor falls back to open-source Sheets.
+- **License boundary:** Univer's Web SDK takes the license.txt contents in the browser (official license guide). licenseKey.txt is only for a Univer server (collaboration, exchange) and is not used. XLSX import/export menus in the advanced preset need a `universerEndpoint`, which is not configured.
+- **Checks:** `npm test` 25/25; `npm run typecheck`; `next build` (`/app` first-load JS unchanged at 114 kB; licensed code is a lazy chunk). Browser, preview mode (no license, Univer watermark shown as expected): chart rendered from workbook cells; claims stayed Verified after chart insertion (chart commands are not structural row/column commands); edited E11 250→300, chart and Operations actual updated to 940, verified actual 2185.00; saved private revision 1 (server status verified); page reload, opened revision restored the chart and the edit, claims Verified 2185.00; no console errors. Browser, default build without license: no licensed chunk requested, demo verified, landing unaffected.
+- **Evidence:** `docs/evidence/m014-chart-reopened-unlicensed-preview.jpg` (watermark visible because no license was used locally).
+- **Open:** Licensed render (watermark removed) must be confirmed on the hosted domain after the owner adds `NEXT_PUBLIC_UNIVER_LICENSE` in Vercel and redeploys; whether the license is domain-bound is unknown.
+- **Status:** Verified locally on branch `univer-pro/charts`; PR for owner review.
+
+### I-013 | 2026-11-04 | Dev server rejects writes from 127.0.0.1
+- **Reproduction:** `next dev -H 127.0.0.1`, browse to `http://127.0.0.1:3001/app`, create an account: HTTP 403 "Same-origin request header required". The same request from `http://localhost:3001` succeeds.
+- **Cause:** In dev, `request.nextUrl.origin` reports `localhost` while the browser sends `Origin: http://127.0.0.1:…`, so `sameOriginWrite` fails. Production (`next start`) checks earlier passed.
+- **Status:** Not changed (security guard behaves correctly for production). Use `http://localhost:<port>` for local dev testing.
+

@@ -38,7 +38,7 @@ The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their ow
 
 ## Credentials
 
-P2 still uses open-source Univer Sheets and **does not need any license key in the frontend**. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
+Without a license, Proofline runs open-source Univer Sheets only. Setting `NEXT_PUBLIC_UNIVER_LICENSE` to the contents of Univer's `license.txt` (the browser license, designed by Univer to be sent to the client) loads the licensed preset lazily and adds a Budget vs actual chart to each imported workbook. `licenseKey.txt` is a server secret for a future Univer server and is never exposed to the browser. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
 
 The Ant Ling API is used **in Codex as a coding assistant**, per the project owner. This does not imply Ant Ling inference is integrated into the app. If the partnership requires in-app Ant Ling inference, make it a separate backend milestone and record actual successful calls.
 
