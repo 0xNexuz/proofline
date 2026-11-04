@@ -5,7 +5,7 @@
 - **Date:** 2026-11-04
 - **Stage/status:** P2 authenticated storage and audit implemented. Local SQLite and hosted PostgreSQL paths verified; structural row operations remain restricted.
 - **Workspace:** `proofline-starter` on Windows. P1 baseline `6a3f38f` on `main`; P2 branch `p2/server-storage-audit` pushed to private `https://github.com/0xNexuz/proofline` with default branch P2. Hosted demo: `https://proofline-alpha.vercel.app/`.
-- **Last verified milestone:** Hosted edit → revalidate → save revision 2 → page reload/open → audit, documented in `docs/BUILD_LEDGER.md`; screenshot `docs/evidence/p2-vercel-live.png`.
+- **Last verified milestone:** M-012 final production alias and post-deploy API data continuity. Hosted edit → revalidate → save revision 2 → page reload/open → audit is in M-011; screenshot `docs/evidence/p2-vercel-live.png`.
 - **Local server at last check:** Stopped after production build and verification. `npm run dev` starts loopback development server.
 - **Approved scope:** Owner explicitly authorized GitHub push and Vercel deployment. Free Neon PostgreSQL resource `proofline-db` is connected. No paid plan, custom domain, broader client scope, or Pro entitlement was authorized.
 
