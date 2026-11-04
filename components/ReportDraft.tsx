@@ -51,9 +51,9 @@ export default function ReportDraft({ workbook, onFocusClaim }: {
   const outdated = draft && workbook && (draft.workbookId !== workbook.id || draft.revision !== workbook.revision);
 
   return (
-    <section className="report-card" aria-label="Report draft">
+    <section className="ws-card report-card" aria-label="Report draft">
       <div className="claims-heading">
-        <div><span className="eyebrow">ANT LING · GROUNDED DRAFT</span><h2>Report summary</h2></div>
+        <div><h2>Report summary</h2><p className="ws-sub">Written by Ant Ling. Every figure is inserted by the cent engine.</p></div>
         <button type="button" className="primary" onClick={() => void generate()} disabled={!configured || !workbook || busy}>
           {busy ? 'Drafting…' : draft ? 'Draft again' : 'Draft summary'}
         </button>

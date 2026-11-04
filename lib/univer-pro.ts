@@ -41,8 +41,8 @@ export async function insertBudgetChart(univerAPI: FUniver, sheet: FWorksheet, c
     .setValueFields([1, 2])
     .setTitle(BUDGET_CHART_TITLE)
     .setPalette(['#8EA2C8', '#2B9A5A'])
-    .setPosition('G3')
-    .setSize(520, 300)
+    .setPosition('F3')
+    .setSize(310, 250)
     .build();
   return sheet.insertChart(info);
 }
