@@ -294,3 +294,14 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Fix:** All generic element rules exclude `.editor-host *`; the editor host gets `isolation: isolate` so Univer's internal z-indexes stay inside it.
 - **Status:** Fixed; screenshots show Univer's native toolbar and a clickable empty state.
 
+
+### M-017 | 2026-11-04 | Live checks: Univer license and first Ant Ling call
+- **Deployment:** Vercel project `proofline-2obq` (Git-connected) deployed the PR #4 merge `df48161` to production; `proofline-alpha.vercel.app` serves it. The Neon store was connected before this build. `GET /api/ai/status` on the live domain returned `configured: true`, model `Ling-3.1-flash`; no runtime errors in the Vercel error view.
+- **Univer license (owner-observed):** With `NEXT_PUBLIC_UNIVER_LICENSE` (license.txt, Vercel "Config" visibility, Production) the live `/app` showed no "Univer Office" watermark, so the license is accepted on `proofline-alpha.vercel.app`. `licenseKey.txt` remains unused.
+- **Ant Ling runtime (owner-observed):** On the live site the owner created an account, saved revision 1 and pressed Draft summary. Ant Ling returned a draft in which every figure was rendered as an engine-inserted fact (total budget 3000.00, actual 2035.00, variance -965.00, 4 categories, 6 transactions, 2 flagged, Operations 1500.00/890.00/-610.00, ...). The saved revision's actual total (2035.00) differs from the sample's 2135.00, consistent with an amount edited before saving; owner asked to confirm.
+- **Not captured:** request ID, model version string and token usage for this call. The API returns them in the draft response, but the UI does not display them and Hobby runtime logs keep no request records for this route. Capture them from the browser network panel for formal evidence.
+- **Follow-up in this entry:** Landing now lists Ant Ling as Live, the build log adds "Ant Ling writes the summary" (shipped) and "Reports in Univer Docs" (next), facts show 35 tests and the licensed SDK; AGENTS.md rule 6 updated to describe the runtime role.
+
+### Q-003 | 2026-11-04 | Landing page cleaned for submission
+- **Asked:** Owner is submitting the project and asked to remove the build log and anything not needed from the landing page.
+- **Decision/changes:** Removed the Build log section, its nav link and step data; removed "We're building ProofLine in the open" from the hero; removed Live/In progress status tags from the parts list and the wheel caption (all parts are live); the caption chip reads "How it works"; the closing section keeps only the "Open the workspace" call to action. The engineering build log stays in `docs/BUILD_LEDGER.md`.

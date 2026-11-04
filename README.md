@@ -9,7 +9,7 @@ Hosted demo: https://proofline-alpha.vercel.app/ (free Vercel and Neon resources
 - `components/UniverPanel.tsx`: real Univer Sheets via the official `UniverSheetsCorePreset`; public Facade events detect source-cell and structural edits. Facade ranges read current values and formulas for independent revalidation. Legacy browser-local snapshots remain available.
 - `lib/verification.ts` and `components/ClaimInspector.tsx`: stale/invalid claim withholding, integer-cent revalidation, stable transaction IDs, sheet-row provenance, previous/current values, calculation methods, and supporting records.
 - `lib/server/`, `app/api/`, and `components/AccountPanel.tsx`: SQLite locally and PostgreSQL on Vercel, authenticated accounts, owner-scoped APIs, private versioned snapshots, source/claim rows, revision conflicts, retry keys, and append-only application audit. Local development binds to `127.0.0.1` by default.
-- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, a live-verified Ant Ling call (the drafting path is tested against a stand-in server), document and slides reports, or a production security assessment.
+- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, document and slides reports, or a production security assessment.
 
 ## Run in Codex or locally
 
