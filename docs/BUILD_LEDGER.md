@@ -273,3 +273,24 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Open:** live call with the owner's token (record model, request ID, token usage, and whether Ling follows the token rules; tune the prompt if the rejection rate is high); audit-trail entry for drafts; Univer Docs editor for the approved summary (P3).
 - **Status:** PR for owner review. Ant Ling runtime remains **unverified** until a live call succeeds.
 
+
+### M-016 | 2026-11-04 | Workspace redesign (/app)
+- **Source/trigger:** Owner saw the live `/app` and asked why the workspace still had the old layout. Only the landing page had been redesigned (M-013); the workspace kept the original stacked dark cards with the Univer editor at the bottom.
+- **Expected:** The Univer workbook becomes the main surface; verified totals, claim inspection and the Ant Ling summary sit in a side rail; import and account move into a dialog and a slide-over; visual language matches the landing page; the workbook itself gets readable formatting; no change to verification, storage or drafting logic.
+- **Deployment note (owner action, recorded):** The owner imported the repo as a new Vercel project `proofline-2obq` (Git-connected) instead of linking the original `proofline` project; `proofline-alpha.vercel.app` was moved to it and the Neon store was connected after its last build, so a redeploy is required before hosted sign-in and saving work.
+- **Status:** In progress on branch `workspace/redesign`.
+- **Implementation:** New shell in `components/Workspace.tsx`: dark top bar (wordmark linking home, workbook title and revision, live status pill, Import CSVs, Load sample, account button); main grid with the Univer workbook on the left and a sticky rail on the right. `components/TotalsPanel.tsx` (new): verified totals plus a budget bar per category; clicking a category opens its claim. Import moved to a dialog, account to a slide-over (`components/AccountPanel.tsx` copy rewritten without internal phase jargon; history labels humanised). `components/UniverPanel.tsx`: sheet bar with Univer and licence chips, Save on this device / Save revision, status line, an empty-state card over the grid, a loading placeholder while the editor chunk downloads, and workbook formatting (bold header rows with a tint, column widths). Licensed chart moved to F3 at 310x250 so it fits beside the tables. Styles: `app/app/workspace.css` (scoped `.ws`); the old global dark styles (`app/p1.css`, `app/p2.css`, most of `app/globals.css`) were removed.
+- **Checks:** `npm test` 35/35; typecheck; `next build` (`/app` 11.3 kB). Real browser on dev with licensed preview and the local Ant Ling stand-in: empty state, load sample to Verified, category click opens Logistics actual, sign-up in the slide-over closes it, Save revision makes revision 1 Verified, Draft summary renders, Import dialog closes with Escape, phone 390px has no horizontal overflow, no console errors. Production build without licence: landing unchanged, `/app` loads sample to Verified with only the Univer Sheets chip, no console errors.
+- **Evidence:** `docs/evidence/m016-workspace-oss.jpg`; `docs/evidence/m016-workspace-licensed-preview-standin-draft.jpg` (watermark because no licence locally; the draft came from the stand-in server, not Ant Ling).
+
+### I-014 | 2026-11-04 | Number formats change what the verifier reads
+- **Reproduction:** Applying `setNumberFormat('#,##0.00')` to budget and amount cells after import; the client verifier then received `"1,500.00"` from `FRange.getValues()` and withheld all totals ("Invalid money value on sheet row 4").
+- **Root cause:** In Univer 1.3.1, `getValues()` returns display text for number-formatted cells; Proofline's client verifier deliberately accepts only numeric amounts.
+- **Fix:** Do not apply number formats. Formatting is limited to bold headers, header tint and column widths, none of which change values. Recorded in code next to `styleWorkbook`.
+- **Status:** Fixed and re-verified in the browser (Verified, 6 records). A user who applies a number format by hand will see totals withheld; that is the intended fail-closed behaviour until the verifier reads raw cell values.
+
+### I-015 | 2026-11-04 | Workspace button styles leaked into Univer; overlay under the canvas
+- **Reproduction:** First redesign pass styled every `button` under `.ws`, which boxed Univer's own toolbar tabs and icons; the empty-state overlay sat under Univer's canvas and could not be clicked.
+- **Fix:** All generic element rules exclude `.editor-host *`; the editor host gets `isolation: isolate` so Univer's internal z-indexes stay inside it.
+- **Status:** Fixed; screenshots show Univer's native toolbar and a clickable empty state.
+

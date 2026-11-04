@@ -23,12 +23,12 @@ export default function ClaimInspector({ verification, focus = null }: {
   const selected = claims.find(claim => claim.id === selectedId) ?? claims[0];
   const status = verification.phase === 'verified' ? 'Verified' :
     verification.phase === 'stale' ? 'Revalidating' :
-    verification.phase === 'invalid' ? 'Invalid' : 'No claims yet';
+    verification.phase === 'invalid' ? 'On hold' : 'No claims yet';
 
   return (
-    <section className="claims-card" aria-label="Claim inspection" ref={sectionRef}>
+    <section className="ws-card claims-card" aria-label="Claim inspection" ref={sectionRef}>
       <div className="claims-heading">
-        <div><span className="eyebrow">SOURCE → CALCULATION → CLAIM</span><h2>Claim inspection</h2></div>
+        <div><h2>Claim inspection</h2><p className="ws-sub">Pick a figure to see how it was calculated and which rows it came from.</p></div>
         <span className={`verification-badge ${verification.phase}`} data-testid="verification-status">{status}</span>
       </div>
       {verification.phase === 'stale' && <p role="status" className="claim-warning">Workbook changed. Current claims are withheld until independent revalidation finishes.</p>}

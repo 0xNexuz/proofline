@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core';
 import UniverPresetSheetsCoreEnUS from '@univerjs/preset-sheets-core/locales/en-US';
 import { createUniver, LocaleType, mergeLocales } from '@univerjs/presets';
@@ -21,7 +21,7 @@ const PRO_PREVIEW = process.env.NEXT_PUBLIC_UNIVER_PRO_PREVIEW === '1';
 const PRO_ENABLED = UNIVER_LICENSE.length > 0 || PRO_PREVIEW;
 
 export default function UniverPanel({ analysis, version, verification, onVerification, remoteLoad,
-  serverUser, selectedRevision, onServerSave, restoreLocalInitially }: {
+  serverUser, selectedRevision, onServerSave, restoreLocalInitially, emptyState = null }: {
   analysis: Analysis | null;
   version: number;
   verification: VerificationState;
@@ -31,6 +31,8 @@ export default function UniverPanel({ analysis, version, verification, onVerific
   selectedRevision: number | null;
   onServerSave: (snapshot: object, unsupportedOperation: boolean) => Promise<{ status: string; error: string | null; revision: number }>;
   restoreLocalInitially: boolean;
+  /** Shown over the grid while there is no workbook yet. */
+  emptyState?: ReactNode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sdkRef = useRef<UniverSetup | null>(null);
@@ -174,6 +176,8 @@ export default function UniverPanel({ analysis, version, verification, onVerific
       if (!sheet) throw new Error('Univer did not create a worksheet');
       const matrix = workbookMatrix(analysis);
       sheet.getRange(`A1:E${matrix.length}`).setValues(matrix);
+      try { styleWorkbook(sheet, analysis.summaries.length); }
+      catch (error) { console.warn('Workbook formatting skipped', error); }
       setNotice(`Imported ${analysis.transactions.length} transactions. Independently revalidating the workbook…`);
       const pro = proRef.current;
       if (pro) {
@@ -245,15 +249,41 @@ export default function UniverPanel({ analysis, version, verification, onVerific
     }
   }
 
+  const saveLabel = serverUser ? (selectedRevision ? `Revision ${selectedRevision}` : 'Not saved to your account yet') : 'Sign in to save revisions';
   return (
-    <section className="editor-card" aria-label="Univer spreadsheet">
-      <div className="editor-heading">
-        <div><span className="eyebrow">UNIVER SHEETS · REAL SDK{proMode === 'licensed' ? ' · LICENSED FEATURES' : proMode === 'preview' ? ' · LICENSED FEATURES (UNLICENSED PREVIEW)' : ''}</span><h2>Evidence workbook</h2></div>
-        <div className="button-row"><button type="button" onClick={() => void saveServer()} disabled={!ready || !serverUser}>Save to private server</button><button type="button" onClick={saveLocal} disabled={!ready}>Save local copy</button></div>
+    <section className="ws-card ws-sheet-card" aria-label="Univer spreadsheet">
+      <div className="ws-sheetbar">
+        <div className="ws-sheetbar-title">
+          <h2>Evidence workbook</h2>
+          <span className="ws-chip">Univer Sheets</span>
+          {proMode === 'licensed' && <span className="ws-chip strong">Licensed features</span>}
+          {proMode === 'preview' && <span className="ws-chip warn">Licensed preview, no license</span>}
+        </div>
+        <div className="button-row">
+          <button type="button" onClick={saveLocal} disabled={!ready}>Save on this device</button>
+          <button type="button" className="primary" onClick={() => void saveServer()} disabled={!ready || !serverUser}
+            title={serverUser ? 'Save a private revision to your account' : 'Sign in to save revisions'}>Save revision</button>
+        </div>
       </div>
-      <div className="editor-host" ref={containerRef} />
-      <p className="editor-status" role="status">{notice}</p>
-      <p className="fineprint">Claims use validated source cells and integer-cent arithmetic. Spreadsheet formulas remain editable but do not certify claims. {serverUser ? `Signed in as ${serverUser}${selectedRevision ? ` · private revision ${selectedRevision}` : ' · new private workbook'}.` : 'Sign in for private server revisions.'} Structural row, column, range and sort commands withhold claims until a fresh validated import.{proMode !== 'off' ? ' The Budget vs actual chart is drawn by Univer from the workbook formulas; certified figures stay in Claim inspection.' : ''}</p>
+      <p className="ws-sheet-status" role="status"><span className={`ws-dot ${verification.phase}`} aria-hidden="true" />{notice}<span className="ws-save-meta">{saveLabel}</span></p>
+      <div className="ws-editor-wrap">
+        <div className="editor-host" ref={containerRef} />
+        {emptyState && ready && <div className="ws-empty">{emptyState}</div>}
+      </div>
+      <p className="fineprint">Totals are certified from the source rows in whole cents; spreadsheet formulas stay editable but never certify a total. Inserting, deleting, moving or sorting rows puts totals on hold until a fresh import.{proMode !== 'off' ? ' The Budget vs actual chart is drawn by Univer from the workbook formulas.' : ''}</p>
     </section>
   );
+}
+
+/** Readable formatting for an imported Proofline workbook: bold headers, header tint, column widths. Values untouched. */
+function styleWorkbook(sheet: NonNullable<ReturnType<NonNullable<ReturnType<UniverSetup['univerAPI']['getActiveWorkbook']>>['getActiveSheet']>>,
+  categoryCount: number) {
+  const txHeaderRow = categoryCount + 6;
+  [96, 112, 116, 150, 116].forEach((width, column) => sheet.setColumnWidth(column, width));
+  sheet.getRange('A1').setFontWeight('bold').setFontSize(13);
+  for (const row of [3, txHeaderRow]) {
+    sheet.getRange(`A${row}:E${row}`).setFontWeight('bold').setBackgroundColor('#EEE8DF');
+  }
+  // No number formats: in Univer 1.3.1 a format such as #,##0.00 makes FRange.getValues() return display
+  // text ("1,500.00"), which the verifier correctly rejects as an invalid amount (ledger I-014).
 }

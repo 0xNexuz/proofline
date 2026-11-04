@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import './p1.css';
-import './p2.css';
 
 export const metadata: Metadata = {
-  title: 'Proofline — Financial evidence workspace',
+  title: 'ProofLine',
   description: 'Univer-powered, evidence-first financial reporting prototype.',
 };
 

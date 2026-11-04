@@ -1,15 +1,23 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { Analysis } from '@/lib/finance';
-import { analyze, money, parseBudgets, parseTransactions } from '@/lib/finance';
-import { initialVerification, verificationReducer } from '@/lib/verification';
+import { analyze, parseBudgets, parseTransactions } from '@/lib/finance';
+import { initialVerification, verificationReducer, type VerificationPhase } from '@/lib/verification';
 import ClaimInspector from '@/components/ClaimInspector';
 import AccountPanel, { type AccountUser, type WorkbookItem } from '@/components/AccountPanel';
 import ReportDraft from '@/components/ReportDraft';
+import TotalsPanel from '@/components/TotalsPanel';
 
-const UniverPanel = dynamic(() => import('@/components/UniverPanel'), { ssr: false });
+function EditorLoading() {
+  return <section className="ws-card ws-sheet-card" aria-label="Univer spreadsheet"><div className="ws-editor-loading" role="status">
+    <span className="ws-spinner" aria-hidden="true" />Loading the Univer workbook…</div></section>;
+}
+const UniverPanel = dynamic(() => import('@/components/UniverPanel'), { ssr: false, loading: EditorLoading });
+
+const PHASE_LABEL: Record<VerificationPhase, string> = { idle: 'No workbook', stale: 'Re-checking', verified: 'Verified', invalid: 'Totals on hold' };
 const SAMPLE_BUDGET = `category,budget\nOperations,1500.00\nLogistics,700.00\nCommunity,800.00`;
 const SAMPLE_TX = `id,date,category,description,amount\nT-001,2026-10-01,Operations,Laptop supplies,250.00\nT-002,2026-10-02,Operations,Workspace utilities,640.00\nT-003,2026-10-03,Logistics,Transport to field site,500.00\nT-004,2026-10-05,Logistics,Additional transport,390.00\nT-005,2026-10-08,Community,Community materials,275.00\nT-006,2026-10-09,Outreach,Unbudgeted activity,80.00`;
 const LOCAL_KEY = 'proofline:p0:local-workbook';
@@ -43,6 +51,16 @@ export default function Workspace() {
   const [audit, setAudit] = useState<{ action: string; revision: number; createdAt: string; verificationImpact: string }[]>([]);
   const pendingSave = useRef<{ fingerprint: string; key: string } | null>(null);
   const [claimFocus, setClaimFocus] = useState<{ id: string; seq: number } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const focusClaim = useCallback((id: string) => setClaimFocus(current => ({ id, seq: (current?.seq ?? 0) + 1 })), []);
+
+  useEffect(() => {
+    if (!importOpen && !accountOpen) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { setImportOpen(false); setAccountOpen(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [importOpen, accountOpen]);
 
   const refreshWorkbooks = useCallback(async () => {
     const result = await api<{ workbooks: WorkbookItem[] }>('/api/workbooks');
@@ -67,6 +85,7 @@ export default function Workspace() {
       setRemoteLoad(null);
       setSelected(null);
       await refreshWorkbooks();
+      setAccountOpen(false);
     } catch (caught) { setAccountError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setAccountBusy(false); }
   }
@@ -85,6 +104,7 @@ export default function Workspace() {
       setImportAnalysis(null);
       setRemoteLoad({ sequence: Date.now(), snapshot: result.snapshot, status: result.status, error: result.error });
       setAudit([]);
+      setAccountOpen(false);
     } catch (caught) { setAccountError(caught instanceof Error ? caught.message : String(caught)); }
     finally { setAccountBusy(false); }
   }
@@ -140,6 +160,7 @@ export default function Workspace() {
       setImportAnalysis(result);
       setRevision(x => x + 1);
       setError('');
+      setImportOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -163,52 +184,92 @@ export default function Workspace() {
     setError('');
   }
 
+  const title = selected?.title ?? (verification.phase === 'idle' ? 'No workbook yet' : 'Unsaved workbook');
+  const meta = selected ? `Revision ${selected.revision}` : user ? 'Not saved yet' : 'Sign in to save';
+
   return (
-    <main className="container">
-      <header className="masthead">
-        <div><a href="/" className="brand" style={{ color: 'inherit', textDecoration: 'none' }} aria-label="ProofLine home">PROOFLINE<span className="brand-dot">.</span></a><p className="subtitle">Evidence-first financial intelligence · Built with Univer</p></div>
-        <span className="pill">P2 · PRIVATE REVISIONS</span>
+    <div className="ws">
+      <header className="ws-top">
+        <Link href="/" className="ws-brand" aria-label="ProofLine home">PROOFLINE<span>.</span></Link>
+        <div className="ws-context">
+          <span className="ws-title">{title}</span>
+          <span className="ws-meta">{meta}</span>
+        </div>
+        <span className={`ws-pill ${verification.phase}`} role="status" aria-label={`Verification: ${PHASE_LABEL[verification.phase]}`}>
+          <i aria-hidden="true" />{PHASE_LABEL[verification.phase]}
+        </span>
+        <nav className="ws-actions" aria-label="Workbook actions">
+          <button type="button" className="ws-btn on-dark" onClick={() => { setError(''); setImportOpen(true); }}>Import CSVs</button>
+          <button type="button" className="ws-btn on-dark" onClick={loadExample}>Load sample</button>
+          <button type="button" className="ws-btn account" aria-haspopup="dialog" onClick={() => setAccountOpen(true)}>
+            {user ? <><span className="ws-avatar" aria-hidden="true">{user.username.slice(0, 1).toUpperCase()}</span>{user.username}</> : 'Sign in'}
+          </button>
+        </nav>
       </header>
-      <section className="hero">
-        <div><span className="eyebrow">EVERY CLAIM HAS A SOURCE.</span><h1>Financial reports should<br />show their working.</h1><p>Import budgets and transactions, inspect the underlying Univer workbook, and see which claims remain verified after an edit.</p></div>
-        <div className="hero-note">Claims are calculated independently from workbook source cells. Invalid edits withhold current totals until the workbook is repaired.</div>
-      </section>
-      <section className="controls" aria-label="Import financial evidence">
-        <div className="controls-heading"><h2>Import evidence</h2><p>Choose the two CSV templates, or use synthetic demo data.</p></div>
-        <div className="input-row">
-          <label className="file-input"><strong>Budget CSV</strong><span>{budgetFilename}</span><input type="file" accept=".csv,text/csv" onChange={e => void chooseCsv(e.target.files?.[0], 'budget')} /></label>
-          <label className="file-input"><strong>Transactions CSV</strong><span>{txFilename}</span><input type="file" accept=".csv,text/csv" onChange={e => void chooseCsv(e.target.files?.[0], 'transactions')} /></label>
+
+      {accountError && !accountOpen && <div className="ws-banner" role="alert">
+        <span>{accountError}</span><button type="button" onClick={() => setAccountError('')}>Dismiss</button>
+      </div>}
+
+      <div className="ws-main">
+        <div className="ws-sheet">
+          {sessionReady ? <UniverPanel key={user?.id ?? 'guest'} analysis={importAnalysis} version={revision}
+            verification={verification} onVerification={dispatchVerification} restoreLocalInitially={!user}
+            remoteLoad={remoteLoad} serverUser={user?.username ?? null} selectedRevision={selected?.revision ?? null}
+            onServerSave={saveRemote}
+            emptyState={verification.phase === 'idle' ? <div className="ws-empty-card">
+              <h2>Start with a budget</h2>
+              <p>Load the sample budget to see a workbook whose totals are checked to the cent, or import your own budget and transaction CSVs.</p>
+              <div className="button-row">
+                <button type="button" className="primary" onClick={loadExample}>Load the sample budget</button>
+                <button type="button" onClick={() => setImportOpen(true)}>Import CSVs</button>
+              </div>
+            </div> : null} /> : <EditorLoading />}
         </div>
-        <div className="button-row"><button className="primary" type="button" onClick={() => run()}>Generate workbook</button><button type="button" onClick={loadExample}>Load synthetic demo</button></div>
-        {error && <p role="alert" className="error">{error}</p>}
-        <p className="fineprint">Budget header: <code>category,budget</code> · Transactions header: <code>id,date,category,description,amount</code>. Source IDs must remain unique. Sign in to save a private server revision.</p>
-      </section>
-      <AccountPanel user={user} workbooks={workbooks} selectedId={selected?.id ?? null} busy={accountBusy}
-        error={accountError} audit={audit} onAuth={onAuth} onLogout={onLogout} onOpen={onOpen}
-        onMigrate={onMigrate} onAudit={onAudit} />
-      {verification.current && <section className="analysis" aria-label="Verified financial analysis">
-        <div className="stat"><span>Budget total</span><strong>{money(verification.current.budgetTotalCents)}</strong></div>
-        <div className="stat"><span>Actual spend</span><strong>{money(verification.current.actualTotalCents)}</strong></div>
-        <div className="stat"><span>Exception categories</span><strong>{verification.current.exceptionCount}</strong></div>
-        <div className="stat"><span>Unique transactions</span><strong>{verification.current.transactions.length}</strong></div>
-        <div className="summary-list">
-          <h2>Independently verified results</h2>
-          {verification.current.summaries.map(s => <div className="summary-row" key={s.category}>
-            <div><strong>{s.category}</strong><small>Source transactions: {s.transactionIds.join(', ') || 'none'}</small></div>
-            <div className="summary-value"><strong>{money(s.actualCents)} / {money(s.budgetCents)}</strong><small className={s.status === 'within budget' ? 'ok' : 'warning'}>{s.status} · variance {money(s.varianceCents)}</small></div>
-          </div>)}
+
+        <aside className="ws-rail" aria-label="Verified results">
+          <TotalsPanel verification={verification} onFocusClaim={focusClaim} onLoadSample={loadExample} />
+          <ClaimInspector verification={verification} focus={claimFocus} />
+          {user ? <ReportDraft workbook={selected} onFocusClaim={focusClaim} />
+            : <section className="ws-card ws-note"><h2>Report summary</h2>
+              <p>Sign in and save a workbook to draft a summary with Ant Ling. It writes the wording; every figure comes from the cent engine.</p>
+              <button type="button" onClick={() => setAccountOpen(true)}>Sign in</button></section>}
+          <p className="ws-foot">Spreadsheet editing by Univer. Checking, sources and storage by ProofLine. Ant Ling drafts report wording when connected and never supplies figures.</p>
+        </aside>
+      </div>
+
+      {importOpen && <div className="ws-layer" onMouseDown={event => { if (event.target === event.currentTarget) setImportOpen(false); }}>
+        <div className="ws-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
+          <div className="ws-dialog-head">
+            <h2 id="import-title">Import CSVs</h2>
+            <button type="button" className="ws-close" aria-label="Close" onClick={() => setImportOpen(false)}>×</button>
+          </div>
+          <p className="fineprint">Choose a budget file and a transactions file. The workbook is rebuilt from them and every total is checked again.</p>
+          <div className="input-row">
+            <label className="file-input"><strong>Budget</strong><span>{budgetFilename}</span><code>category,budget</code>
+              <input type="file" accept=".csv,text/csv" onChange={e => void chooseCsv(e.target.files?.[0], 'budget')} /></label>
+            <label className="file-input"><strong>Transactions</strong><span>{txFilename}</span><code>id,date,category,description,amount</code>
+              <input type="file" accept=".csv,text/csv" onChange={e => void chooseCsv(e.target.files?.[0], 'transactions')} /></label>
+          </div>
+          {error && <p role="alert" className="error">{error}</p>}
+          <div className="button-row end">
+            <button type="button" onClick={loadExample}>Use the sample instead</button>
+            <button className="primary" type="button" onClick={() => run()}>Build workbook</button>
+          </div>
         </div>
-      </section>}
-      {(verification.phase === 'stale' || verification.phase === 'invalid') && <section className="withheld" aria-label="Current totals withheld">
-        <strong>Current financial totals withheld</strong><span>{verification.phase === 'stale' ? 'Revalidating workbook source cells…' : 'Repair the workbook source cells to restore verified totals.'}</span>
-      </section>}
-      <ClaimInspector verification={verification} focus={claimFocus} />
-      {user && <ReportDraft workbook={selected} onFocusClaim={id => setClaimFocus(current => ({ id, seq: (current?.seq ?? 0) + 1 }))} />}
-      {sessionReady && <UniverPanel key={user?.id ?? 'guest'} analysis={importAnalysis} version={revision}
-        verification={verification} onVerification={dispatchVerification} restoreLocalInitially={!user}
-        remoteLoad={remoteLoad} serverUser={user?.username ?? null} selectedRevision={selected?.revision ?? null}
-        onServerSave={saveRemote} />}
-      <footer>Univer provides the editable spreadsheet and formula runtime. Proofline independently validates source cells, calculates integer-cent claims, and tracks supporting records. Ant Ling drafts report wording from saved, verified revisions when connected; it never supplies figures.</footer>
-    </main>
+      </div>}
+
+      {accountOpen && <div className="ws-layer side" onMouseDown={event => { if (event.target === event.currentTarget) setAccountOpen(false); }}>
+        <div className="ws-drawer" role="dialog" aria-modal="true" aria-labelledby="account-title">
+          <div className="ws-dialog-head">
+            <h2 id="account-title">{user ? 'Your account' : 'Sign in'}</h2>
+            <button type="button" className="ws-close" aria-label="Close" onClick={() => setAccountOpen(false)}>×</button>
+          </div>
+          <AccountPanel user={user} workbooks={workbooks} selectedId={selected?.id ?? null} busy={accountBusy}
+            error={accountError} audit={audit} onAuth={onAuth} onLogout={onLogout} onOpen={onOpen}
+            onMigrate={onMigrate} onAudit={onAudit} />
+        </div>
+      </div>}
+    </div>
   );
 }
