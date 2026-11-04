@@ -5,16 +5,16 @@ import { getStore, StoreError } from '@/lib/server/store';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export function GET(request: NextRequest) {
-  const auth = requireUser(request);
+export async function GET(request: NextRequest) {
+  const auth = await requireUser(request);
   if ('response' in auth) return auth.response;
-  return json({ workbooks: getStore().listWorkbooks(auth.user.id) });
+  return json({ workbooks: await getStore().listWorkbooks(auth.user.id) });
 }
 
 export async function POST(request: NextRequest) {
   const denied = writeGuard(request);
   if (denied) return denied;
-  const auth = requireUser(request);
+  const auth = await requireUser(request);
   if ('response' in auth) return auth.response;
   try {
     const data = await body(request);
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         typeof data.expectedRevision !== 'number' || data.expectedRevision !== 0) {
       throw new StoreError('invalid', 'New workbook requires title, revision zero and idempotency key');
     }
-    const saved = getStore().save({ ownerId: auth.user.id, actorId: auth.user.id,
+    const saved = await getStore().save({ ownerId: auth.user.id, actorId: auth.user.id,
       title: data.title, snapshot: data.snapshot, expectedRevision: 0,
       idempotencyKey: data.idempotencyKey, unsupportedOperation: data.unsupportedOperation === true,
       migration: data.migration === true });

@@ -21,7 +21,7 @@ npm run dev
 
 Open `http://localhost:3000`. Select **Load synthetic demo** to see rows and formulas in a genuine Univer workbook. Edit a transaction amount or ID, inspect a claim, create a local account, save a private server revision, and reload/open it. Alternatively, upload CSVs matching `data/` templates. Existing P1 browser-local data stays in localStorage; after signing in, select **Import local P1 workbook to server** to create a separate private revision without deleting the local copy.
 
-Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Local accounts and storage are a development foundation, not a hosted multi-user service. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
+Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Hosted runs use PostgreSQL through a private `DATABASE_URL` (or `POSTGRES_URL`) supplied by the platform; Vercel refuses to start workbook storage without one. The local SQLite database is not automatically copied to PostgreSQL. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
 
 Physical row insert/delete and structural move/reorder/sort commands deliberately withhold claims until a fresh validated CSV import. The application does not certify those operations. Ordinary source-cell paste is revalidated and duplicate IDs are rejected. Do not treat the workbook's visible formulas as certified financial claims.
 
@@ -56,3 +56,4 @@ The Ant Ling API is used **in Codex as a coding assistant**, per the project own
 - Univer Pro licensing: https://docs.univer.ai/guides/server-integration/license
 - Univer server integration boundary: https://docs.univer.ai/server
 - Node SQLite API: https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html
+- Vercel Marketplace PostgreSQL: https://vercel.com/docs/marketplace-storage

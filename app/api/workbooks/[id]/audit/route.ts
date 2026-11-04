@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: Context) {
-  const auth = requireUser(request);
+  const auth = await requireUser(request);
   if ('response' in auth) return auth.response;
   try {
     const { id } = await context.params;
-    return json({ entries: getStore().getAudit(auth.user.id, id) });
+    return json({ entries: await getStore().getAudit(auth.user.id, id) });
   } catch (error) { return failure(error); }
 }

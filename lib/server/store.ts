@@ -3,11 +3,9 @@ import { mkdirSync, chmodSync } from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { inspectSnapshot, SNAPSHOT_SCHEMA_VERSION } from './snapshot.ts';
-
-export class StoreError extends Error {
-  code: 'not_found' | 'conflict' | 'invalid' | 'rate_limited';
-  constructor(code: 'not_found' | 'conflict' | 'invalid' | 'rate_limited', message: string) { super(message); this.code = code; }
-}
+import { StoreError } from './errors.ts';
+import { PostgresStore } from './postgres-store.ts';
+export { StoreError } from './errors.ts';
 
 type UserRow = { id: string; username: string; password_salt: string; password_hash: string };
 type WorkbookRow = { id: string; owner_id: string; title: string; workbook_unit_id: string; current_revision: number; created_at: string; updated_at: string };
@@ -273,11 +271,16 @@ export class ProoflineStore {
   }
 }
 
-let singleton: ProoflineStore | null = null;
+let singleton: ProoflineStore | PostgresStore | null = null;
 export function getStore() {
   if (!singleton) {
-    const dataDir = process.env.PROOFLINE_DATA_DIR || path.join(process.cwd(), '.proofline-data');
-    singleton = new ProoflineStore(path.join(dataDir, 'proofline.sqlite'));
+    const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    if (databaseUrl) singleton = new PostgresStore(databaseUrl);
+    else {
+      if (process.env.VERCEL) throw new Error('Hosted Proofline requires DATABASE_URL or POSTGRES_URL');
+      const dataDir = process.env.PROOFLINE_DATA_DIR || path.join(process.cwd(), '.proofline-data');
+      singleton = new ProoflineStore(path.join(dataDir, 'proofline.sqlite'));
+    }
   }
   return singleton;
 }

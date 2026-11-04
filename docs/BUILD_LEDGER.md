@@ -188,3 +188,23 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Checks:** `npm test` 25/25 passed; `npm run typecheck` passed; `npm run build` passed. Local production HTTP 200 listened only on `127.0.0.1:3000`. Unauthenticated workbook listing returned HTTP 401; an auth write without same-origin headers returned HTTP 403. Browser console error list was empty after the live editor checks.
 - **Secret review:** `.env.local` absent; `.proofline-data/proofline.sqlite`, build output, npm cache and logs ignored. `git diff --cached --check` passed. A source-file scan for private-key blocks, AWS/OpenAI-like tokens and long literal key/password/secret assignments returned no matches. Reviewed all three P2 screenshots visually; they show synthetic records and test account names only. The staged path list contains no private database or environment file. No remote is configured, so GitHub contents cannot be checked.
 - **Result:** P2 branch ready for a local commit. No push, public deployment or publication authorized.
+
+### M-010 | 2026-11-04 | GitHub and Vercel publication requested
+- **Source/trigger:** Owner explicitly requested a GitHub push and Vercel deployment, with a short Vercel link.
+- **Expected:** Publish the reviewed P2 code to an authorized GitHub repository and deploy a working app under the shortest available Vercel project domain, after resolving the local SQLite durability limit and verifying the live build.
+- **Baseline:** Local P1 commit `6a3f38f`, P2 commit `e105ce3`, clean `p2/server-storage-audit` branch, and no Git remote. The current SQLite file is ignored and local only.
+- **Status:** In progress. Connected GitHub and Vercel plugin calls were unavailable to the model; checking authenticated local tooling and existing account/project state. No push or deployment has occurred in this entry.
+
+### D-006 | 2026-11-04 | Hosted storage uses PostgreSQL
+- **Question:** Can Vercel run P2's local SQLite file as durable, private workbook storage?
+- **Decision:** No. Add an async PostgreSQL adapter for hosted runs while preserving the SQLite adapter for local use. Both call the same independent snapshot validator and enforce ownership, revision conflicts, retry keys, normalized source/claim history and append-only audit. Vercel fails closed if no `DATABASE_URL` or `POSTGRES_URL` is configured.
+- **Infrastructure:** Created a new `proofline` Vercel project and a dedicated `proofline-db` Neon resource on the explicit `free_v3` plan, separate from the account's unrelated database. Credentials were injected by Vercel; the temporary ignored `.env.local` used for a live integration check was removed afterward. No paid plan or custom domain was purchased.
+- **Evidence:** Official Vercel Marketplace/Postgres guidance, `lib/server/postgres-store.ts`, live Neon integration check, 25 local tests, typecheck and build.
+- **Result:** Hosted adapter verified against a real PostgreSQL service; deployment and live site checks remain pending.
+
+### I-011 | 2026-11-04 | PostgreSQL fixture row assumption and certificate setup
+- **Failure:** First live PostgreSQL test created a synthetic account and revision, then attempted to edit fixed row 11 in a smaller one-budget fixture. That row did not exist, so the test failed with a local `TypeError`; the created synthetic revision remains in the dedicated test database.
+- **Fix:** Find the transaction by immutable `IT-001` ID before editing its amount. Re-run against a new synthetic account; verified revision 1→2, owner isolation, stale revision conflict, idempotency, before/after audit and the append-only trigger.
+- **Security check:** The computer's inherited `NODE_TLS_REJECT_UNAUTHORIZED=0` disabled certificate checks for the first package install. Subsequent Vercel and PostgreSQL operations explicitly set `NODE_TLS_REJECT_UNAUTHORIZED=1` with Node `--use-system-ca`. The PostgreSQL URL is normalized to `sslmode=verify-full`. Reinstall dependencies under certificate validation before publishing.
+- **Evidence:** `tests/postgres.integration.mjs`; successful live check output contains no connection string or password. No customer data was used.
+- **Result:** Test fixture issue resolved; certificate-validated clean install and final deploy checks pending.

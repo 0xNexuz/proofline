@@ -29,10 +29,10 @@ export async function verifyPassword(password: string, salt: string, hash: strin
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function newSession(userId: string) {
+export async function newSession(userId: string) {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + SESSION_MS);
-  getStore().createSession(userId, hashToken(token), expiresAt.toISOString());
+  await getStore().createSession(userId, hashToken(token), expiresAt.toISOString());
   return { token, expiresAt };
 }
 
@@ -40,9 +40,9 @@ export function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export function sessionUser(request: NextRequest) {
+export async function sessionUser(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  return token ? getStore().sessionUser(hashToken(token)) : null;
+  return token ? await getStore().sessionUser(hashToken(token)) : null;
 }
 
 export function sameOriginWrite(request: NextRequest) {

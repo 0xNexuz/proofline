@@ -27,7 +27,7 @@ export function writeGuard(request: NextRequest) {
   return null;
 }
 
-export function requireUser(request: NextRequest) {
-  const user = sessionUser(request);
+export async function requireUser(request: NextRequest) {
+  const user = await sessionUser(request);
   return user ? { user } : { response: json({ error: 'Authentication required' }, 401) };
 }
