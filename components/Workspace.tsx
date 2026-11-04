@@ -164,7 +164,7 @@ export default function Workspace() {
   return (
     <main className="container">
       <header className="masthead">
-        <div><div className="brand">PROOFLINE<span className="brand-dot">.</span></div><p className="subtitle">Evidence-first financial intelligence · Built with Univer</p></div>
+        <div><a href="/" className="brand" style={{ color: 'inherit', textDecoration: 'none' }} aria-label="ProofLine home">PROOFLINE<span className="brand-dot">.</span></a><p className="subtitle">Evidence-first financial intelligence · Built with Univer</p></div>
         <span className="pill">P2 · PRIVATE REVISIONS</span>
       </header>
       <section className="hero">
@@ -205,7 +205,7 @@ export default function Workspace() {
         verification={verification} onVerification={dispatchVerification} restoreLocalInitially={!user}
         remoteLoad={remoteLoad} serverUser={user?.username ?? null} selectedRevision={selected?.revision ?? null}
         onServerSave={saveRemote} />}
-      <footer>Univer provides the editable spreadsheet and formula runtime. Proofline independently validates source cells, calculates integer-cent claims, and tracks supporting records. Ant Ling assists development in Codex; it is not an application runtime integration.</footer>
+      <footer>Univer provides the editable spreadsheet and formula runtime. Proofline independently validates source cells, calculates integer-cent claims, and tracks supporting records. Ant Ling report drafting is in development and is not part of this workspace yet.</footer>
     </main>
   );
 }
