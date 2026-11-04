@@ -6,18 +6,24 @@ import UniverPresetSheetsCoreEnUS from '@univerjs/preset-sheets-core/locales/en-
 import { createUniver, LocaleType, mergeLocales } from '@univerjs/presets';
 import type { Analysis } from '@/lib/finance';
 import { workbookMatrix } from '@/lib/finance';
-import { analyzeWorkbookGrid, type GridValue, type VerificationAction, type VerificationState } from '@/lib/verification';
+import { analyzeWorkbookGrid, isUnsupportedStructuralCommand, type GridValue, type VerificationAction, type VerificationState } from '@/lib/verification';
 import '@univerjs/preset-sheets-core/lib/index.css';
 
 type UniverSetup = ReturnType<typeof createUniver>;
 const STORAGE_KEY = 'proofline:p0:local-workbook'; // Retain P0 snapshots without migration or unverifiable metadata.
-const STRUCTURAL_COMMAND = /^sheet\.command\.(?:insert|remove|delete|move)-(?:row|col|range)/;
+type RemoteLoad = { sequence: number; snapshot: object; status: string; error: string | null };
 
-export default function UniverPanel({ analysis, version, verification, onVerification }: {
+export default function UniverPanel({ analysis, version, verification, onVerification, remoteLoad,
+  serverUser, selectedRevision, onServerSave, restoreLocalInitially }: {
   analysis: Analysis | null;
   version: number;
   verification: VerificationState;
   onVerification: Dispatch<VerificationAction>;
+  remoteLoad: RemoteLoad | null;
+  serverUser: string | null;
+  selectedRevision: number | null;
+  onServerSave: (snapshot: object, unsupportedOperation: boolean) => Promise<{ status: string; error: string | null; revision: number }>;
+  restoreLocalInitially: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sdkRef = useRef<UniverSetup | null>(null);
@@ -25,6 +31,8 @@ export default function UniverPanel({ analysis, version, verification, onVerific
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const generationRef = useRef(0);
   const replacingRef = useRef(false);
+  const unsupportedRef = useRef(false);
+  const unverifiedReasonRef = useRef('A structural worksheet edit needs a fresh validated CSV import before claims can be verified');
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState('Initializing Univer Sheets…');
 
@@ -39,11 +47,17 @@ export default function UniverPanel({ analysis, version, verification, onVerific
 
     const scheduleValidation = () => {
       if (replacingRef.current) return;
+      if (unsupportedRef.current) {
+        onVerification({ type: 'invalid', error: unverifiedReasonRef.current });
+        setNotice(`${unverifiedReasonRef.current} Import validated CSVs to restore claim verification.`);
+        return;
+      }
       onVerification({ type: 'stale' });
       const generation = ++generationRef.current;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         if (generation !== generationRef.current) return;
+        if (unsupportedRef.current) return;
         try {
           const sheet = sdkRef.current?.univerAPI.getActiveWorkbook()?.getActiveSheet();
           if (!sheet) throw new Error('Proofline worksheet is missing');
@@ -73,7 +87,7 @@ export default function UniverPanel({ analysis, version, verification, onVerific
       sdkRef.current = sdk;
       let stored: object | undefined;
       try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
+        const raw = restoreLocalInitially ? window.localStorage.getItem(STORAGE_KEY) : null;
         if (raw) stored = JSON.parse(raw) as object;
       } catch {
         setNotice('Previous local workbook could not be restored. Load CSVs to create a new workbook.');
@@ -86,7 +100,13 @@ export default function UniverPanel({ analysis, version, verification, onVerific
         }
       }));
       subscriptions.push(sdk.univerAPI.addEvent(sdk.univerAPI.Event.CommandExecuted, ({ id }) => {
-        if (STRUCTURAL_COMMAND.test(id)) scheduleValidation();
+        if (isUnsupportedStructuralCommand(id)) {
+          unsupportedRef.current = true;
+          unverifiedReasonRef.current = 'A structural worksheet edit needs a fresh validated CSV import before claims can be verified.';
+          generationRef.current++;
+          if (timerRef.current) clearTimeout(timerRef.current);
+          scheduleValidation();
+        }
       }));
       subscriptions.push(sdk.univerAPI.addEvent(sdk.univerAPI.Event.ActiveSheetChanged, scheduleValidation));
       subscriptions.push(sdk.univerAPI.addEvent(sdk.univerAPI.Event.SheetDeleted, scheduleValidation));
@@ -110,11 +130,12 @@ export default function UniverPanel({ analysis, version, verification, onVerific
       sdkRef.current = null;
       queueMicrotask(() => { sdk?.univer.dispose(); container.remove(); });
     };
-  }, [onVerification]);
+  }, [onVerification, restoreLocalInitially]);
 
   useEffect(() => {
     if (!ready || !analysis || !sdkRef.current) return;
     replacingRef.current = true;
+    unsupportedRef.current = false;
     generationRef.current++;
     if (timerRef.current) clearTimeout(timerRef.current);
     try {
@@ -138,6 +159,29 @@ export default function UniverPanel({ analysis, version, verification, onVerific
     scheduleRef.current();
   }, [analysis, version, ready, onVerification]);
 
+  useEffect(() => {
+    if (!ready || !remoteLoad || !sdkRef.current) return;
+    replacingRef.current = true;
+    generationRef.current++;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    try {
+      const { univerAPI } = sdkRef.current;
+      const previous = univerAPI.getActiveWorkbook();
+      if (previous) univerAPI.disposeUnit(previous.getId());
+      univerAPI.createWorkbook(remoteLoad.snapshot);
+      unsupportedRef.current = remoteLoad.status !== 'verified';
+      if (unsupportedRef.current) unverifiedReasonRef.current = remoteLoad.error || 'Server validation failed for this revision.';
+      setNotice(unsupportedRef.current
+        ? `Loaded unverified private revision: ${remoteLoad.error || 'server validation failed'}. Import validated CSVs to restore claim verification.`
+        : 'Loaded private server revision. Revalidating source cells…');
+    } catch (error) {
+      onVerification({ type: 'invalid', error: error instanceof Error ? error.message : String(error) });
+      setNotice('Private workbook could not be loaded into Univer.');
+      return;
+    } finally { replacingRef.current = false; }
+    scheduleRef.current();
+  }, [remoteLoad, ready, onVerification]);
+
   function saveLocal() {
     try {
       const snapshot = sdkRef.current?.univerAPI.getActiveWorkbook()?.save();
@@ -151,15 +195,31 @@ export default function UniverPanel({ analysis, version, verification, onVerific
     }
   }
 
+  async function saveServer() {
+    try {
+      const snapshot = sdkRef.current?.univerAPI.getActiveWorkbook()?.save();
+      if (!snapshot) throw new Error('No active workbook');
+      const result = await onServerSave(snapshot, unsupportedRef.current);
+      if (result.status === 'invalid') {
+        onVerification({ type: 'invalid', error: result.error || 'Server could not verify this revision' });
+      }
+      setNotice(result.status === 'verified'
+        ? `Saved private server revision ${result.revision}. Source cells were independently verified.`
+        : `Saved private server revision ${result.revision}, but claims remain unverified: ${result.error}`);
+    } catch (error) {
+      setNotice(`Private save failed. The editor and browser-local P1 copy were not overwritten: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   return (
     <section className="editor-card" aria-label="Univer spreadsheet">
       <div className="editor-heading">
         <div><span className="eyebrow">UNIVER SHEETS · REAL SDK</span><h2>Evidence workbook</h2></div>
-        <button type="button" onClick={saveLocal} disabled={!ready}>Save workbook locally</button>
+        <div className="button-row"><button type="button" onClick={() => void saveServer()} disabled={!ready || !serverUser}>Save to private server</button><button type="button" onClick={saveLocal} disabled={!ready}>Save local copy</button></div>
       </div>
       <div className="editor-host" ref={containerRef} />
       <p className="editor-status" role="status">{notice}</p>
-      <p className="fineprint">Claims use validated source cells and integer-cent arithmetic. Spreadsheet formulas remain editable and do not certify Proofline's independent totals. Storage is browser-local.</p>
+      <p className="fineprint">Claims use validated source cells and integer-cent arithmetic. Spreadsheet formulas remain editable but do not certify claims. {serverUser ? `Signed in as ${serverUser}${selectedRevision ? ` · private revision ${selectedRevision}` : ' · new private workbook'}.` : 'Sign in for private server revisions.'} Structural row, column, range and sort commands withhold claims until a fresh validated import.</p>
     </section>
   );
 }

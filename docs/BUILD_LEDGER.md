@@ -135,3 +135,56 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Action:** Selected `A16:E16` in the live Univer workbook and cleared the T-006 record. This is a record clear, not a physical sheet-row deletion. The `SheetValueChanged` path recalculated current actual spend 2185.00→2105.00 and transaction count 6→5; Outreach actual changed from 80.00 to 0.00 and its inspector showed no contributing records.
 - **Evidence:** `docs/evidence/p1-record-cleared.jpg`. Reloaded the previously saved workbook and observed six transactions and verified 2185.00 restored. Physical row deletion is covered by the grid-adapter unit test; a live physical-row-delete interaction was not completed in this browser run.
 - **Result:** Verified record clearing and reload recovery in the actual editor. Structural row-command handling remains an integration test target for P2 or a focused follow-up.
+
+### M-007 | 2026-11-03 | P2 secure local storage and audit foundation requested
+- **Source/trigger:** Owner authorized local P2 implementation: baseline Git safety, physical worksheet operations, authenticated versioned server storage, ownership, optimistic concurrency, migration, append-only audit, automated/browser evidence, and documentation. No push, deployment, paid infrastructure, or client-scope expansion authorized.
+- **Baseline:** P1 `npm test` 17/17, `npm run typecheck`, and `npm run build` passed; live browser restored 2185.00 verified spend in real Univer. No configured license or Ant Ling runtime key was found in the frontend or local template. Initialized local Git after staged-file secret/path review; committed verified P1 as `6a3f38f` on `main`, then created `p2/server-storage-audit`.
+- **Expected:** Preserve P1 behavior, add local authenticated revision storage with immutable history and explicit migration, verify isolation and conflict handling, and document unsupported editor operations honestly.
+- **Status:** In progress. This is a local development milestone only.
+
+### D-004 | 2026-11-03 | Use private local SQLite storage for P2
+- **Question:** How can P2 verify authenticated server persistence without hosted credentials, paid infrastructure, or deployment?
+- **Decision:** Use Node 24's built-in `node:sqlite` as a local PostgreSQL equivalent for this milestone. Store the database under ignored `.proofline-data/`, bind Next.js to `127.0.0.1`, and retain the P1 localStorage copy until an explicit import. The database records schema version 2; each workbook snapshot records schema version 1 and an immutable revision number.
+- **Reason:** One local transactional database supports atomic snapshots, owner checks, idempotent writes, revision conflicts, normalized source/claim rows, and audit entries with no additional service or paid cost. This does not establish production hosting or backup guarantees.
+- **Evidence:** `lib/server/store.ts`, `lib/server/auth.ts`, `lib/server/snapshot.ts`, API routes, Node SQLite documentation, P2 tests, and local browser flows.
+- **Result:** Implemented locally. PostgreSQL migration and production operations remain future work.
+
+### I-008 | 2026-11-03 | Raw Univer snapshot uses date serials
+- **Reproduction:** The first explicit P1 browser-local import produced private revision 1 with `Date must be text on sheet row 11`. The source displayed `2026-10-01` in Univer, while its saved snapshot contained serial `46296` and an ISO date number format.
+- **Root cause:** Browser Facade range values were formatted strings; raw `FWorkbook.save()` cells used Excel date serials. The first server parser assumed a text date.
+- **Fix:** Convert an integer serial only when the cell has the exact supported `yyyy-mm-dd` style and a supported 1900/1904 date system. Keep any other numeric date invalid. The invalid first revision remains in the audit history; the retry created a separate verified private import.
+- **Evidence:** `tests/server.test.mjs` date-serial regression; live import revised from invalid to verified 2185.00; `docs/evidence/p2-private-revision-audit.jpg`.
+- **Learning:** Independent server certification must inspect saved raw SDK data, not assume the Facade's display value shape.
+
+### I-009 | 2026-11-03 | P2 test harness exposed Node TypeScript and scrypt limits
+- **Failures:** First Node strip-types test rejected a TypeScript constructor parameter property; after replacing it with an explicit field, password-hash test failed because the requested scrypt cost exceeded Node's default memory allowance.
+- **Fix:** Use a normal constructor field and an explicit 64 MB `maxmem` for `N=32768,r=8,p=1` scrypt. Store only salted password hashes and hashed session tokens.
+- **Evidence:** Final password/session test passes within the 25-test suite; typecheck and build pass.
+- **Learning:** Node's test-time TS stripping and crypto defaults need their own runtime check even when TypeScript typechecking passes.
+
+### M-008 | 2026-11-04 | P2 authenticated revision and audit path verified locally
+- **Implementation:** Added local accounts with scrypt password hashing, bounded login attempts, random HttpOnly SameSite session cookies, same-origin write guard, owner-scoped workbook and audit APIs, 2 MB snapshot limit, independent server revalidation, immutable revision snapshots, normalized transaction/budget/claim rows, optimistic `expectedRevision`, retry-safe idempotency keys, and append-only audit triggers with actor, timestamp, action, before/after state, record IDs and claim impact. Existing browser-local P1 snapshots require an explicit import; the import never deletes local data. No Univer Pro or Ant Ling application runtime package was added.
+- **Automated checks:** `npm test` 25/25 passed, including ownership, conflicts, idempotency, migration, malformed snapshots, throttling, audit and structural-command restrictions. `npm run typecheck` and `npm run build` passed on Next.js 15.5.28. The production server returned HTTP 200 bound to `127.0.0.1:3000`.
+- **Browser path:** Created synthetic local accounts. First account imported verified 2185.00 source data after the date-serial correction. Edited E11 from 300 to 310 in real Univer; current claims went stale, then verified 2195.00; private revision 2 saved and reloaded with T-001 at 310. Audit showed `local_import` and `workbook_saved` with verification impact. A second account listed no first-account workbooks, and direct navigation to the first user's workbook API returned `Workbook not found`. Signing into the second account after a reload showed a blank editor and no private claims; signing back into the first required an explicit workbook open. An older invalid import stayed invalid when opened.
+- **Evidence:** `docs/evidence/p2-private-revision-audit.jpg`, `docs/evidence/p2-access-denied.jpg`; browser console review and final secret scan are recorded separately below.
+- **Result:** Verified local server persistence and ownership; no hosted service, push, or deployment.
+
+### I-010 | 2026-11-04 | Physical worksheet edits need conservative certification
+- **Reproduction:** In the real Univer browser editor, deleting source sheet row 11 shifted T-002 into row 11. A physical row insertion also executed. A row-header drag selected rows 11–14 but did not move them; actual rearrangement by drag remains unverified. Source-cell paste had previously changed E11 from 300 to 305, triggering stale and then verified 2190.00.
+- **Risk:** Row insert/delete/move/reorder/sort commands can change the source layout and formula references in ways this fixed-schema verifier has not certified.
+- **Fix:** Subscribe to the public Univer `CommandExecuted` event and fail closed on recognized structural command IDs. Current claims are withheld; a server save stores an invalid revision and its audit impact as `claims_withheld`. Only a fresh validated CSV import resets this restriction. On reload, any server-invalid revision remains unverified even if the client parser could read some source cells.
+- **Evidence:** Browser delete immediately showed prior 2195.00 and withheld updated value; `docs/evidence/p2-row-delete-withheld.jpg`. Saved the deleted workbook as private revision 3 `invalid`; reload/open still withheld current totals. Physical insertion also caused invalid state. `tests/verification.test.mjs` covers structural IDs, row mapping and pasted duplicate IDs.
+- **Result:** Delete, insert, and paste behavior checked in the actual browser. Drag-based rearrangement did not execute, so it is not claimed as supported or verified. Any recognized structural move/reorder/sort command is fail-closed; broader UI coverage remains open.
+- **Learning:** An observed selection gesture is not proof of row movement. The UI must never show a prior financial total as currently verified after a structural command.
+
+### D-005 | 2026-11-04 | Univer entitlement and attribution boundary
+- **Question:** Do P2 storage or audit features depend on an unverified Univer commercial license?
+- **Review:** Official Univer installation and server integration guidance distinguishes OSS editing from licensed Pro/server capabilities and leaves application authentication, data ownership and persistence to the host application. The installed runtime remains coordinated OSS 1.3.1 packages with no `@univerjs-pro/*` dependency, no license activation and no license credential in the client.
+- **Decision:** Attribute editing, formulas, Facade events and snapshots to Univer; attribute independent calculations, auth, storage, provenance and audit to NEXUZ/Builder. Ant Ling remains owner-reported Codex development assistance, with no verified Proofline runtime call.
+- **Sources:** https://docs.univer.ai/guides/docs/getting-started/installation ; https://docs.univer.ai/server ; https://docs.univer.ai/guides/server-integration/license
+- **Result:** OSS capability reviewed. Exact partnership entitlement, future Pro rights, domains and activation remain unresolved with the client; no credential was displayed or committed.
+
+### M-009 | 2026-11-04 | P2 final local safety review
+- **Checks:** `npm test` 25/25 passed; `npm run typecheck` passed; `npm run build` passed. Local production HTTP 200 listened only on `127.0.0.1:3000`. Unauthenticated workbook listing returned HTTP 401; an auth write without same-origin headers returned HTTP 403. Browser console error list was empty after the live editor checks.
+- **Secret review:** `.env.local` absent; `.proofline-data/proofline.sqlite`, build output, npm cache and logs ignored. `git diff --cached --check` passed. A source-file scan for private-key blocks, AWS/OpenAI-like tokens and long literal key/password/secret assignments returned no matches. Reviewed all three P2 screenshots visually; they show synthetic records and test account names only. The staged path list contains no private database or environment file. No remote is configured, so GitHub contents cannot be checked.
+- **Result:** P2 branch ready for a local commit. No push, public deployment or publication authorized.

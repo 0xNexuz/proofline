@@ -1,7 +1,7 @@
 # First vertical slice — acceptance checklist
 
 - [x] `npm install` succeeds on selected compatible Node version.
-- [x] `npm test` passes (17 tests, including P1 edit, invalidation, row-deletion and provenance cases).
+- [x] `npm test` passes (25 tests, including P1 edit, P2 auth/storage/audit, structural restriction and provenance cases).
 - [x] `npm run typecheck` succeeds.
 - [x] `npm run build` succeeds.
 - [x] Browser opens native Univer Sheets editor without blank canvas or runtime errors.
@@ -10,11 +10,11 @@
 - [x] Independent numbers are reproducible: budget 3000.00; actual 2135.00; logistics 890.00 exceeds budget 700.00; Outreach unbudgeted 80.00.
 - [x] Workbook displays formulas with values; compare row outputs to deterministic engine.
 - [x] Edit a cell; save; reload; confirm workbook snapshot reflects the edit.
-- [ ] No key, private data or client license appears in GitHub or browser logs.
+- [ ] No key, private data or client license appears in GitHub or browser logs. Local staged-file secret review passed; no GitHub remote exists, so GitHub cannot be checked.
 - [x] Record durable P1 screenshots of the live Univer editor, verified claims, invalid claims and source inspection (`docs/evidence/`).
 - [x] Update build ledger and contribution map with actual test results.
 
-Local P0 and P1 verification on 2026-11-03 is recorded in `docs/BUILD_LEDGER.md` M-003 and M-005. The GitHub/secret assertion remains open because this extracted folder has no Git repository or remote; no GitHub content was inspected.
+Local P0, P1 and P2 verification is recorded in `docs/BUILD_LEDGER.md` M-003, M-005 and M-008. Local Git was initialized for the P1 baseline. The GitHub assertion remains open because no remote exists; no GitHub content was inspected.
 
 ## P1 acceptance
 
@@ -26,6 +26,19 @@ Local P0 and P1 verification on 2026-11-03 is recorded in `docs/BUILD_LEDGER.md`
 - [x] `npm test` 17/17, `npm run typecheck`, `npm run build`, local HTTP 200, and browser console error check passed.
 - [x] Durable screenshots: `docs/evidence/p1-verified-after-reload.jpg`, `docs/evidence/p1-invalid-duplicate-id.jpg`, and `docs/evidence/p1-logistics-variance-sources.jpg`.
 - [x] Browser source-record clear: clearing `A16:E16` changed actual 2185.00→2105.00, transaction count 6→5, and Outreach actual 80.00→0.00; saved snapshot reload restored the six-record workbook. Evidence: `docs/evidence/p1-record-cleared.jpg`.
-- [ ] Observe an actual physical sheet-row deletion through Univer's browser UI. The grid-adapter deletion behavior has a passing unit test; live structural-command verification remains open.
+- [x] Observe an actual physical sheet-row deletion through Univer's browser UI. Deleting row 11 withheld current claims, and the invalid private revision stayed invalid on reload (`docs/evidence/p2-row-delete-withheld.jpg`).
+
+## P2 acceptance
+
+- [x] Verified P1 baseline committed locally as `6a3f38f` on `main`; P2 work on local `p2/server-storage-audit`. No remote, push, deployment or paid service.
+- [x] Authentication and owner-scoped API prevent a second test account from listing or opening the first account's workbook; direct API access returned `Workbook not found`.
+- [x] Private SQLite-backed snapshots retain workbook unit ID, source records, budgets, claims, schema version, revision metadata and historical revisions. Same-origin writes, hashed credentials/sessions, retry keys and revision conflicts have automated coverage.
+- [x] Explicit P1 localStorage import preserved the local copy. A real Univer date-serial migration failure was recorded as invalid; corrected import and independent server verification succeeded.
+- [x] Append-only application audit records actor, time, action, record IDs, before/after and claim impact; database trigger rejects update/delete. No tamper-proof or compliance certification claim.
+- [x] Browser edit → stale → verified calculation → private save → reload/open → claim inspection and audit completed with synthetic data. Durable screenshots: `docs/evidence/p2-private-revision-audit.jpg` and `docs/evidence/p2-access-denied.jpg`.
+- [x] Physical row delete and insert in Univer withheld claims; a deleted-row snapshot saved as invalid revision 3 and remained withheld after reload. Source-cell paste revalidated a changed amount. Automated tests cover inserted rows, whole-record order mapping, duplicate pasted IDs and structural command classification.
+- [ ] Actual row rearrangement through the browser UI. A row-header drag selected rows but did not move them; recognized move/reorder/sort commands are deliberately unverified until a fresh validated import. This restriction is documented in README and BUILD_LEDGER.
+- [x] `npm test` 25/25, `npm run typecheck`, `npm run build`, production HTTP 200 on `127.0.0.1:3000`.
+- [ ] Production hosting, backups, multi-host sessions, external security assessment and client license entitlement verification. These are outside this local P2 foundation.
 
 Never mark a box checked solely because code exists. Execute the check.

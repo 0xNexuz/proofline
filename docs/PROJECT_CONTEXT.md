@@ -2,18 +2,21 @@
 
 ## Current state
 
-- **Date:** 2026-11-03
-- **Stage/status:** P1 development and verification complete locally within the documented browser-local scope.
-- **Workspace:** Extracted `proofline-starter` folder on Windows. It has no `.git` repository, branch, HEAD, remote, commit, or push.
-- **Last verified milestone:** M-006 in `docs/BUILD_LEDGER.md` (P1 completion is M-005).
-- **Local server at last check:** Production build running at `http://localhost:3000` (background npm PID 18860); process lifetime is local to this computer session.
-- **Approved scope:** Local P0 and P1 implementation and verification. No deployment or push authorized.
+- **Date:** 2026-11-04
+- **Stage/status:** P2 authenticated local server storage and audit foundation implemented and verified, with structural row operations restricted as documented.
+- **Workspace:** `proofline-starter` on Windows. Local Git P1 baseline commit `6a3f38f` on `main`; current branch `p2/server-storage-audit`. No remote, push or deployment.
+- **Last verified milestone:** M-008 and I-010 in `docs/BUILD_LEDGER.md`.
+- **Local server at last check:** Production build at `http://127.0.0.1:3000`, bound to loopback (background Node PID 10020 when verified); process lifetime is local to this computer session.
+- **Approved scope:** Local P0, P1 and P2 implementation and verification. No deployment, push, paid infrastructure or client-scope expansion authorized.
 
 ## Architecture and boundaries
 
 - Next.js 15.5.28, React 19.3.1, TypeScript, and coordinated Univer OSS SDK packages at matching 1.3.1. Their separately versioned icon dependency is `@univerjs/icons@1.46.0`.
 - `lib/finance.ts` parses untrusted CSVs and computes integer-cent figures. `components/UniverPanel.tsx` renders a real client-only Univer editor, imports values/formulas through its Facade API, subscribes to documented public events, and saves/restores a browser-local workbook snapshot.
 - `lib/verification.ts` reads current source cells and formulas from public Facade ranges, remaps IDs to sheet rows, validates through the deterministic engine, and manages verified/stale/invalid states. `components/ClaimInspector.tsx` links methods, prior/current values, and supporting rows to each claim. Stale or invalid state withholds current summary cards.
+- `lib/server/snapshot.ts` validates raw Univer snapshots and independently reuses the integer-cent engine. It converts supported formatted ISO date serials for P1 migration. `lib/server/store.ts` uses Node SQLite transactions for private versioned snapshots, normalized source/budget/claim records, owner checks, revision conflicts, retry keys and append-only audit. `lib/server/auth.ts` supplies local accounts, salted scrypt password hashes, hashed session tokens and HttpOnly cookies. API routes enforce account ownership and same-origin writes.
+- Signed-in users explicitly open private workbooks; P1 localStorage is imported only by user action and retained. The local database is ignored under `.proofline-data/`. Server schema is version 2; workbook snapshot schema is version 1. This is a local development equivalent, with no hosted backup or multi-host design.
+- Recognized structural row/column/range and sort commands in Univer withhold current claims until a fresh validated import. The server records such revisions as invalid. Any server-invalid revision stays invalid on client reload. Source-cell paste is independently revalidated.
 - Ant Ling is user-reported coding-workflow assistance; no Proofline runtime integration exists. No commercial Univer feature or license key is used.
 
 ## Verification
@@ -33,8 +36,14 @@
 | P1 browser persistence | Saved edited 2185 workbook; reload withheld totals during revalidation, then restored verified 2185 |
 | P1 evidence | Three full-page JPGs in `docs/evidence/` |
 | P1 browser record removal | Clearing `A16:E16` reduced actual 2185→2105 and six transactions→five; Outreach claim 80→0, no current sources; saved snapshot reload restored 2185 |
+| P2 tests | 25/25 passed: finance, edit revalidation, snapshot validation, serial dates, ownership, conflicts, idempotency, migration, audit, malformed data, throttling and structural restrictions |
+| P2 typecheck/build | Passed; Next.js 15.5.28 build exposes four server API routes |
+| P2 browser save/reload | Real Univer E11 300→310; stale then verified actual 2195; private revision 2 saved and reloaded with T-001 310 and audit entries |
+| P2 browser isolation | Second synthetic account listed no first-account workbooks; direct foreign workbook API returned `Workbook not found`; signed-in reload starts with no private claims until explicit open |
+| P2 structural safety | Physical row 11 delete and blank-row insert withheld claims; invalid deleted-row revision 3 stayed invalid after save/reload. Drag selection did not rearrange rows. Source-cell paste revalidated 2190 in an earlier check |
+| P2 evidence | `docs/evidence/p2-private-revision-audit.jpg`, `p2-access-denied.jpg`, `p2-row-delete-withheld.jpg` |
 
-The extracted folder has no GitHub remote to inspect for secrets. See `docs/ACCEPTANCE.md` for the open GitHub evidence item.
+No GitHub remote exists. Local tracked/staged secret scan and screenshot review are recorded in the ledger; GitHub content cannot be inspected.
 
 ## Decisions and next action
 
@@ -53,4 +62,11 @@ The extracted folder has no GitHub remote to inspect for secrets. See `docs/ACCE
 - **Status:** VERIFIED locally. The client has not approved deployment, publishing, merge, or push.
 - **Integration limit:** Physical sheet-row deletion is covered by the grid-adapter unit test; the live browser check covered clearing a source record, not an actual row-delete command. See M-006.
 
-**Next stage:** P2 can define server-side persistence, authentication, audit history, larger datasets, schema/import breadth, and report generation once client data boundaries, license entitlements, ownership and acceptance are documented. Ant Ling runtime inference remains a separate integration decision.
+### 2026-11-04 — P2 local storage and audit
+
+- **Decision:** Use local Node SQLite as the justified development equivalent of PostgreSQL; keep browser-local P1 data, require explicit import, and fail closed on unsupported structural operations.
+- **Reason:** This verifies ownership, independent server calculation, revisions and audit without paid or hosted resources. Client data boundaries and license entitlements remain unresolved.
+- **Evidence:** M-008, I-008 and I-010; 25 tests; production browser evidence.
+- **Status:** VERIFIED locally. Actual drag-based row rearrangement, hosted storage, external security assessment, backup operations, client licensing and deployment are open.
+
+**Next stage:** P3 should address production data boundaries and backups, supported structural editing with full provenance, and a PostgreSQL/hosted migration plan before broader reporting. Ant Ling runtime inference and Univer Pro remain separate approval and entitlement decisions.

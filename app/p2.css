@@ -1,0 +1,17 @@
+.account-card{border:1px solid #2b3b50;border-radius:18px;background:#101a2a;padding:25px;margin-bottom:22px}
+.account-card h3{font-size:16px;margin:22px 0 12px}
+.account-line,.workbook-item{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.account-line{padding:12px 0}
+.account-line strong{color:#b8ebda}
+.auth-switch{display:flex;gap:8px;margin:18px 0}
+.auth-switch button[aria-pressed="true"]{border-color:#6cd6bc;color:#a4f0db;background:#244b52}
+.auth-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;align-items:end;gap:12px}
+.auth-form label{display:flex;flex-direction:column;gap:8px;color:#c3d5df;font-size:13px;font-weight:700}
+.auth-form input{width:100%;border:1px solid #40546b;border-radius:9px;background:#0d1624;color:#f4f9fb;padding:11px 12px;font:inherit}
+.workbook-list{display:grid;gap:9px}
+.workbook-item{border:1px solid #34465a;border-radius:11px;padding:12px;background:#152238}
+.workbook-item strong,.workbook-item small{display:block}
+.workbook-item small{color:#a5b7c9;margin-top:4px}
+.audit-list{border-top:1px solid #34465a;margin-top:20px}
+.audit-list p{font-size:12px;color:#b5c9d5;margin:8px 0}
+@media(max-width:760px){.auth-form{grid-template-columns:1fr}.workbook-item,.account-line{align-items:flex-start;flex-direction:column}}

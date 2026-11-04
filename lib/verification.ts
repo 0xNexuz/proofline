@@ -12,6 +12,7 @@ export type VerificationState = {
   error: string | null;
 };
 export type VerificationAction =
+  | { type: 'reset' }
   | { type: 'stale' }
   | { type: 'verified'; analysis: Analysis }
   | { type: 'invalid'; error: string };
@@ -20,7 +21,13 @@ export const initialVerification: VerificationState = {
   phase: 'idle', current: null, previous: null, error: null,
 };
 
+/** Current Univer 1.3.1 structural command IDs are deliberately fail-closed. */
+export function isUnsupportedStructuralCommand(id: string): boolean {
+  return /^sheet\.command\.(?:insert|remove|delete|move|reorder|append|sort)-(?:row|col|range)/.test(id);
+}
+
 export function verificationReducer(state: VerificationState, action: VerificationAction): VerificationState {
+  if (action.type === 'reset') return initialVerification;
   if (action.type === 'stale') {
     return { phase: 'stale', current: null, previous: state.current ?? state.previous, error: null };
   }

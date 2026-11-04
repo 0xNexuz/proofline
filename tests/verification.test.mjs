@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { analyze, parseBudgets, parseTransactions, workbookMatrix } from '../lib/finance.ts';
-import { analyzeWorkbookGrid, buildClaims, initialVerification, verificationReducer } from '../lib/verification.ts';
+import { analyzeWorkbookGrid, buildClaims, initialVerification, verificationReducer, isUnsupportedStructuralCommand } from '../lib/verification.ts';
 
 function sampleGrid() {
   const budgets = readFileSync(new URL('../data/sample-budget.csv', import.meta.url), 'utf8');
@@ -97,4 +97,26 @@ test('category removal retains the previous claim with a zero updated value', ()
   assert.equal(outreach.previousCents, 8000);
   assert.equal(outreach.valueCents, 0);
   assert.deepEqual(outreach.sourceRecords, []);
+});
+
+test('Univer structural row, range and reorder commands are restricted', () => {
+  for (const id of ['sheet.command.insert-row', 'sheet.command.remove-row',
+    'sheet.command.move-rows', 'sheet.command.reorder-range',
+    'sheet.command.append-row', 'sheet.command.delete-range-move-up']) {
+    assert.equal(isUnsupportedStructuralCommand(id), true, id);
+  }
+  assert.equal(isUnsupportedStructuralCommand('sheet.command.set-range-values'), false);
+});
+
+test('inserted blank rows and whole-record rearrangement retain ID mapping; pasted duplicate IDs fail', () => {
+  const grid = sampleGrid();
+  grid.splice(11, 0, ['', '', '', '', '']);
+  let result = analyzeWorkbookGrid(grid);
+  assert.equal(result.transactions.find(tx => tx.id === 'T-002').sourceRow, 13);
+  const row = grid.splice(16, 1)[0];
+  grid.splice(11, 0, row);
+  result = analyzeWorkbookGrid(grid);
+  assert.equal(result.transactions.find(tx => tx.id === 'T-006').sourceRow, 12);
+  grid[13][1] = 'T-006';
+  assert.throws(() => analyzeWorkbookGrid(grid), /Duplicate transaction ID/);
 });
