@@ -21,7 +21,7 @@ npm run build
 npm run dev
 ```
 
-Open `http://localhost:3000`. Select **Load synthetic demo** to see rows and formulas in a genuine Univer workbook. Edit a transaction amount or ID, inspect a claim, create a local account, save a private server revision, and reload/open it. Alternatively, upload CSVs matching `data/` templates. Existing P1 browser-local data stays in localStorage; after signing in, select **Import local P1 workbook to server** to create a separate private revision without deleting the local copy.
+Open `http://localhost:3000` for the build-story landing page, or go straight to the workspace at `http://localhost:3000/app`. Select **Load synthetic demo** to see rows and formulas in a genuine Univer workbook. Edit a transaction amount or ID, inspect a claim, create a local account, save a private server revision, and reload/open it. Alternatively, upload CSVs matching `data/` templates. Existing P1 browser-local data stays in localStorage; after signing in, select **Import local P1 workbook to server** to create a separate private revision without deleting the local copy.
 
 Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Hosted runs use PostgreSQL through a private `DATABASE_URL` (or `POSTGRES_URL`) supplied by the platform; Vercel refuses to start workbook storage without one. The local SQLite database is not automatically copied to PostgreSQL. Browser localStorage is origin-scoped: localhost P1 copies cannot be read directly by the hosted site. Upload the original CSVs on the hosted site, or import a P1 browser-local copy that was saved on that same site. Neither path deletes the localhost data. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
 
@@ -38,7 +38,7 @@ The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their ow
 
 ## Credentials
 
-P2 still uses open-source Univer Sheets and **does not need any license key in the frontend**. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
+Without a license, Proofline runs open-source Univer Sheets only. Setting `NEXT_PUBLIC_UNIVER_LICENSE` to the contents of Univer's `license.txt` (the browser license, designed by Univer to be sent to the client) loads the licensed preset lazily and adds a Budget vs actual chart to each imported workbook. `licenseKey.txt` is a server secret for a future Univer server and is never exposed to the browser. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
 
 The Ant Ling API is used **in Codex as a coding assistant**, per the project owner. This does not imply Ant Ling inference is integrated into the app. If the partnership requires in-app Ant Ling inference, make it a separate backend milestone and record actual successful calls.
 
