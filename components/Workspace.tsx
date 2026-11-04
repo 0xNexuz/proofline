@@ -7,6 +7,7 @@ import { analyze, money, parseBudgets, parseTransactions } from '@/lib/finance';
 import { initialVerification, verificationReducer } from '@/lib/verification';
 import ClaimInspector from '@/components/ClaimInspector';
 import AccountPanel, { type AccountUser, type WorkbookItem } from '@/components/AccountPanel';
+import ReportDraft from '@/components/ReportDraft';
 
 const UniverPanel = dynamic(() => import('@/components/UniverPanel'), { ssr: false });
 const SAMPLE_BUDGET = `category,budget\nOperations,1500.00\nLogistics,700.00\nCommunity,800.00`;
@@ -41,6 +42,7 @@ export default function Workspace() {
   const [accountBusy, setAccountBusy] = useState(false);
   const [audit, setAudit] = useState<{ action: string; revision: number; createdAt: string; verificationImpact: string }[]>([]);
   const pendingSave = useRef<{ fingerprint: string; key: string } | null>(null);
+  const [claimFocus, setClaimFocus] = useState<{ id: string; seq: number } | null>(null);
 
   const refreshWorkbooks = useCallback(async () => {
     const result = await api<{ workbooks: WorkbookItem[] }>('/api/workbooks');
@@ -200,12 +202,13 @@ export default function Workspace() {
       {(verification.phase === 'stale' || verification.phase === 'invalid') && <section className="withheld" aria-label="Current totals withheld">
         <strong>Current financial totals withheld</strong><span>{verification.phase === 'stale' ? 'Revalidating workbook source cells…' : 'Repair the workbook source cells to restore verified totals.'}</span>
       </section>}
-      <ClaimInspector verification={verification} />
+      <ClaimInspector verification={verification} focus={claimFocus} />
+      {user && <ReportDraft workbook={selected} onFocusClaim={id => setClaimFocus(current => ({ id, seq: (current?.seq ?? 0) + 1 }))} />}
       {sessionReady && <UniverPanel key={user?.id ?? 'guest'} analysis={importAnalysis} version={revision}
         verification={verification} onVerification={dispatchVerification} restoreLocalInitially={!user}
         remoteLoad={remoteLoad} serverUser={user?.username ?? null} selectedRevision={selected?.revision ?? null}
         onServerSave={saveRemote} />}
-      <footer>Univer provides the editable spreadsheet and formula runtime. Proofline independently validates source cells, calculates integer-cent claims, and tracks supporting records. Ant Ling report drafting is in development and is not part of this workspace yet.</footer>
+      <footer>Univer provides the editable spreadsheet and formula runtime. Proofline independently validates source cells, calculates integer-cent claims, and tracks supporting records. Ant Ling drafts report wording from saved, verified revisions when connected; it never supplies figures.</footer>
     </main>
   );
 }

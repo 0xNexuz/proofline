@@ -15,3 +15,14 @@
 .audit-list{border-top:1px solid #34465a;margin-top:20px}
 .audit-list p{font-size:12px;color:#b5c9d5;margin:8px 0}
 @media(max-width:760px){.auth-form{grid-template-columns:1fr}.workbook-item,.account-line{align-items:flex-start;flex-direction:column}}
+
+.report-card{border:1px solid #2b3b50;border-radius:18px;background:#101a2a;padding:25px;margin-bottom:22px}
+.report-card .fineprint{max-width:80ch}
+.report-body{margin-top:16px;border:1px solid #304359;border-radius:13px;background:#152238;padding:20px 22px}
+.report-body p{line-height:1.75;margin:0 0 14px;color:#e3ecf5;max-width:75ch}
+.report-body .claim-warning{margin-bottom:16px}
+.report-body button.fact{display:inline;padding:1px 7px;margin:0 1px;border-radius:6px;border:1px solid #3a806c;background:#17382f;color:#a4f0db;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.4;vertical-align:baseline;transition:background-color .2s ease,border-color .2s ease}
+.report-body button.fact:hover:not(:disabled){background:#1f4d41;border-color:#6cd6bc}
+.report-body button.fact:focus-visible{outline:2px solid #6cd6bc;outline-offset:2px}
+.report-meta{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid #304359;padding-top:14px;font-size:12px;color:#a5b7c9}
+@media(max-width:640px){.report-meta{align-items:flex-start;flex-direction:column}}

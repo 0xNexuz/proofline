@@ -9,7 +9,7 @@ Hosted demo: https://proofline-alpha.vercel.app/ (free Vercel and Neon resources
 - `components/UniverPanel.tsx`: real Univer Sheets via the official `UniverSheetsCorePreset`; public Facade events detect source-cell and structural edits. Facade ranges read current values and formulas for independent revalidation. Legacy browser-local snapshots remain available.
 - `lib/verification.ts` and `components/ClaimInspector.tsx`: stale/invalid claim withholding, integer-cent revalidation, stable transaction IDs, sheet-row provenance, previous/current values, calculation methods, and supporting records.
 - `lib/server/`, `app/api/`, and `components/AccountPanel.tsx`: SQLite locally and PostgreSQL on Vercel, authenticated accounts, owner-scoped APIs, private versioned snapshots, source/claim rows, revision conflicts, retry keys, and append-only application audit. Local development binds to `127.0.0.1` by default.
-- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, Ant Ling in-app inference, document and slides reports, verified license-based Pro components, or a production security assessment.
+- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, a live-verified Ant Ling call (the drafting path is tested against a stand-in server), document and slides reports, or a production security assessment.
 
 ## Run in Codex or locally
 
@@ -40,7 +40,7 @@ The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their ow
 
 Without a license, Proofline runs open-source Univer Sheets only. Setting `NEXT_PUBLIC_UNIVER_LICENSE` to the contents of Univer's `license.txt` (the browser license, designed by Univer to be sent to the client) loads the licensed preset lazily and adds a Budget vs actual chart to each imported workbook. `licenseKey.txt` is a server secret for a future Univer server and is never exposed to the browser. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
 
-The Ant Ling API is used **in Codex as a coding assistant**, per the project owner. This does not imply Ant Ling inference is integrated into the app. If the partnership requires in-app Ant Ling inference, make it a separate backend milestone and record actual successful calls.
+**Ant Ling report drafting.** With `ANT_LING_API_KEY` set on the server, signed-in users can draft a short summary of a saved, verified revision (`POST /api/workbooks/{id}/report`). Ant Ling writes the wording only. Every figure and transaction ID must appear as a fact token such as `{{total:actual}}`, which Proofline replaces with its own integer-cent value. A draft containing any other number, percentage or spelled-out number is rejected and retried once. Only verified totals, category names and transaction IDs are sent (no files or descriptions). `GET /api/ai/status` reports whether drafting is configured, without exposing the key. Live calls against Ant Ling's API are recorded in the build ledger once they have actually succeeded.
 
 ## Project evidence log
 

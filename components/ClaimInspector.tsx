@@ -1,11 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { money } from '@/lib/finance';
 import { buildClaims, type VerificationState } from '@/lib/verification';
 
-export default function ClaimInspector({ verification }: { verification: VerificationState }) {
+export default function ClaimInspector({ verification, focus = null }: {
+  verification: VerificationState;
+  /** Opens a claim from elsewhere (e.g. a figure in a report draft). `seq` re-triggers the same claim. */
+  focus?: { id: string; seq: number } | null;
+}) {
   const [selectedId, setSelectedId] = useState('total:actual');
+  const sectionRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!focus) return;
+    setSelectedId(focus.id);
+    sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [focus]);
   const claims = useMemo(
     () => buildClaims(verification.current, verification.previous),
     [verification.current, verification.previous],
@@ -16,7 +26,7 @@ export default function ClaimInspector({ verification }: { verification: Verific
     verification.phase === 'invalid' ? 'Invalid' : 'No claims yet';
 
   return (
-    <section className="claims-card" aria-label="Claim inspection">
+    <section className="claims-card" aria-label="Claim inspection" ref={sectionRef}>
       <div className="claims-heading">
         <div><span className="eyebrow">SOURCE → CALCULATION → CLAIM</span><h2>Claim inspection</h2></div>
         <span className={`verification-badge ${verification.phase}`} data-testid="verification-status">{status}</span>
