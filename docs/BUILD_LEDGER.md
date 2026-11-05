@@ -321,3 +321,10 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Evidence:** `docs/evidence/m018-report-approved.jpg`, `docs/evidence/m018-report-typed-number-flagged.jpg`, `docs/evidence/m018-report-later-save-changed.jpg`.
 - **Not done / limits:** Live check on the deployed site after merge. The report is not saved as its own document (the approved text and hash are kept in the audit entry; Copy gives the text). No Slides output, AI categorisation or receipt/PDF upload.
 - **Status:** Built and verified locally; PR pending owner review.
+
+### M-019 | 2026-11-05 | README rewritten for reviewers
+- **Source/trigger:** The repository is now public and is part of the submission; the previous README described the P2 foundation, called the repo private and predated the landing page, Ant Ling drafting, the licensed chart and the Docs report.
+- **Expected:** A reviewer can understand what ProofLine does, try it on the live site in a few steps, see exactly how Univer and Ant Ling are used, run it locally, and read the honest limits.
+- **Changes:** `README.md` rewritten: live link and a six-step walkthrough, data flow, Univer packages and Facade APIs actually used, Ant Ling's role and the number rule, local run and environment variables, limits (CSV only, no AI categorisation, no Slides, report kept in the audit trail, no hosted backup/restore or external security review), and a guide to the repo and its evidence logs.
+- **Verification:** Every API, label and command named in the README was checked against the code on this branch (`createWorkbook`, `inspectSnapshot` on save, `engines.node` 24.x, UI labels Load sample / Save revision / Draft summary / Open as report / Check figures / Approve report).
+- **Status:** In PR #6 with M-018.

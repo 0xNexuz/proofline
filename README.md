@@ -1,61 +1,118 @@
-# Proofline — Univer-first financial evidence workspace
+# ProofLine
 
-A **P2 foundation and hosted demo**, not a released financial product. Budget and transaction CSVs become an editable Univer Sheets workbook. Proofline independently revalidates source cells after edits, links claims to supporting rows, and saves authenticated private revisions on local SQLite or hosted PostgreSQL.
+ProofLine turns a budget and its transactions into a real, editable Univer spreadsheet. It checks every total to the cent, shows the transactions behind each figure, and lets Ant Ling write the report in plain English. The model never supplies a number. Before a report can be approved, ProofLine checks each figure in it against the latest saved workbook.
 
-Hosted demo: https://proofline-alpha.vercel.app/ (free Vercel and Neon resources; use synthetic data for evaluation). Source: private GitHub repository `0xNexuz/proofline`.
+**Live:** https://proofline-alpha.vercel.app (the workspace is at `/app`). It runs on free Vercel and Neon tiers, so please use the sample data or other made-up figures.
 
-## What's real, what's next
-- `lib/finance.ts`: TypeScript parser, validation, integer-cent calculations, exceptions and source-ID mapping; unit tests.
-- `components/UniverPanel.tsx`: real Univer Sheets via the official `UniverSheetsCorePreset`; public Facade events detect source-cell and structural edits. Facade ranges read current values and formulas for independent revalidation. Legacy browser-local snapshots remain available.
-- `lib/verification.ts` and `components/ClaimInspector.tsx`: stale/invalid claim withholding, integer-cent revalidation, stable transaction IDs, sheet-row provenance, previous/current values, calculation methods, and supporting records.
-- `lib/server/`, `app/api/`, and `components/AccountPanel.tsx`: SQLite locally and PostgreSQL on Vercel, authenticated accounts, owner-scoped APIs, private versioned snapshots, source/claim rows, revision conflicts, retry keys, and append-only application audit. Local development binds to `127.0.0.1` by default.
-- **Not yet included:** tested hosted backup/restore, broad XLSX/schema support, document and slides reports, or a production security assessment.
+## Try it in two minutes
 
-## Run in Codex or locally
+1. Open `/app` and choose **Load sample**. The sample has three budget lines and six transactions.
+2. Click a category in **Verified totals**. The claim inspector shows how the figure was calculated and which rows it came from.
+3. Change an amount in the sheet, for example cell E14 (T-004). The totals re-check, and the Univer chart moves with them.
+4. **Sign in** (create an account), then **Save revision**.
+5. Choose **Draft summary**. Ant Ling writes the wording, and each figure appears as a chip that opens its claim.
+6. Choose **Open as report** to open the draft in Univer Docs, then edit it.
+   - **Check figures** flags any number you typed yourself, and any figure that changed after the draft was written.
+   - **Approve report** saves an approval in the workbook history, but only once every figure matches.
+
+## How it works
+
+```
+CSV files ─► Univer Sheets workbook ─► cent engine re-reads the cells ─► verified claims (with source rows)
+                                                                            │
+                     Ant Ling writes wording with {{fact tokens}} ◄─────────┘
+                                                                            │
+     Univer Docs report ─► figure check against the latest revision ─► approval in the audit trail
+```
+
+- **Cent engine** (`lib/finance.ts`, `lib/verification.ts`): parses and validates the CSVs, then does all arithmetic in integer cents. Every claim carries its calculation and source transaction IDs. If an edit leaves the data invalid, the claim is withheld instead of guessed. Moving or deleting rows also withholds claims until the next clean import.
+- **Server** (`lib/server/`, `app/api/`):
+  - accounts and private, versioned workbook revisions, with conflict detection and retry-safe saves
+  - an append-only audit trail
+  - SQLite locally, PostgreSQL on Vercel
+  - each saved snapshot is re-verified on the server
+- **Report check** (`lib/server/report-check.ts`):
+  - Every number in an edited report must be one of the following:
+    - a current engine figure
+    - a transaction date
+    - a month or quarter with its year
+    - part of the workbook title
+  - A figure that has changed since the draft is reported as was → now.
+  - Approval re-runs the check on the server and is refused for an older revision. It stores the text, its SHA-256 and the verified count.
+
+## Univer
+
+All packages are pinned to the same Univer release, 1.3.1. The separately versioned `@univerjs/icons` stays at 1.46.0, as Univer's own packages require.
+
+| Use | Package | Facade API used |
+|---|---|---|
+| Editable workbook, formulas, edit events | `@univerjs/preset-sheets-core` | `createWorkbook`, `getRange().setValues/getValues/getFormulas`, `SheetValueChanged`, `CommandExecuted`, `FWorkbook.save()` |
+| Budget vs actual chart (licensed) | `@univerjs/preset-sheets-advanced` | `newChart().setSource()…build()`, `insertChart` |
+| Report editor | `@univerjs/preset-docs-core` | `createDocument`, `appendParagraph`, `setStyle` (named headings), `getParagraphs().getText()` |
+
+The licensed preset loads only when `NEXT_PUBLIC_UNIVER_LICENSE` is set. That variable holds `license.txt`, which Univer designs to be sent to the browser. `licenseKey.txt` is a server secret and is not used or exposed.
+
+## Ant Ling
+
+Ant Ling (`Ling-3.1-flash` through Ant Ling's OpenAI-compatible API) runs on the server and writes report wording only.
+
+- It receives the verified totals, category names and transaction IDs. It does not receive your files or transaction descriptions.
+- It must write every figure as a token such as `{{total:actual}}`. ProofLine replaces each token with the engine's value.
+- A draft that contains any digit, percentage, currency sign or spelled-out number outside a token is rejected and retried once. If the retry fails too, no draft is shown.
+- `GET /api/ai/status` reports whether drafting is configured, without revealing the key.
+
+## Run locally
+
+Requires Node 24 (`engines` in `package.json`). Local storage uses Node's built-in `node:sqlite`.
 
 ```bash
 npm install
-npm test
+npm test          # 43 tests
 npm run typecheck
 npm run build
-npm run dev
+npm run dev       # http://localhost:3000, workspace at /app
 ```
 
-Open `http://localhost:3000` for the build-story landing page, or go straight to the workspace at `http://localhost:3000/app`. Select **Load synthetic demo** to see rows and formulas in a genuine Univer workbook. Edit a transaction amount or ID, inspect a claim, create a local account, save a private server revision, and reload/open it. Alternatively, upload CSVs matching `data/` templates. Existing P1 browser-local data stays in localStorage; after signing in, select **Import local P1 workbook to server** to create a separate private revision without deleting the local copy.
+Open the site as `http://localhost:3000`, not `127.0.0.1`: sign-in checks the request origin.
 
-Server data lives in ignored `.proofline-data/proofline.sqlite` by default; set `PROOFLINE_DATA_DIR` to another local private directory if needed. Back up this database before clearing the project folder. Hosted runs use PostgreSQL through a private `DATABASE_URL` (or `POSTGRES_URL`) supplied by the platform; Vercel refuses to start workbook storage without one. The local SQLite database is not automatically copied to PostgreSQL. Browser localStorage is origin-scoped: localhost P1 copies cannot be read directly by the hosted site. Upload the original CSVs on the hosted site, or import a P1 browser-local copy that was saved on that same site. Neither path deletes the localhost data. Authenticated workbooks do not auto-open on sign-in. A browser-local P1 copy remains shared by anyone using that browser profile.
+Without a database URL, data is stored in `.proofline-data/` (ignored by Git).
 
-Physical row insert/delete and structural move/reorder/sort commands deliberately withhold claims until a fresh validated CSV import. The application does not certify those operations. Ordinary source-cell paste is revalidated and duplicate IDs are rejected. Do not treat the workbook's visible formulas as certified financial claims.
+| Variable | Where | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_UNIVER_LICENSE` | browser, build time | Contents of Univer `license.txt`; turns on the chart. Redeploy after changing it. |
+| `NEXT_PUBLIC_UNIVER_PRO_PREVIEW` | local only | Set to `1` to try licensed features without a license (Univer shows a watermark). |
+| `ANT_LING_API_KEY` | server | Enables report drafting. |
+| `ANT_LING_BASE_URL`, `ANT_LING_MODEL` | server, optional | Any OpenAI-compatible host serving Ling models. Defaults: `https://api.ant-ling.com/v1`, `Ling-3.1-flash`. |
+| `DATABASE_URL` or `POSTGRES_URL` | server | PostgreSQL. Required on Vercel. |
+| `PROOFLINE_DATA_DIR` | server, optional | Folder for the local SQLite file. |
 
-For Codex: install the current official Univer skills before major integration tasks:
+`.env.example` lists them all. Never commit real values.
 
-```bash
-npx skills add dream-num/skills --skill univer-integrate
-npx skills add dream-num/skills --skill univer-pro-integrate
-```
+## Limits
 
-The repository pins the coordinated Univer OSS SDK packages to `1.3.1`. Their own manifests require the separately versioned `@univerjs/icons@1.46.0`; do not force icons to 1.3.1. Pin any future Pro SDK packages to the same coordinated SDK release (check actual availability and license rights first). On 2026-11-03, this Windows starter used Node `v24.22.1` and npm `11.19.1`. P2 passed 25 tests, typecheck, and production build; local and hosted browser flows verified private save/reload, audit, and real Univer edits. See `docs/BUILD_LEDGER.md` for exact evidence and limitations.
+These are the honest gaps today:
 
-## Credentials
+- **Input:** only CSV with the template columns in `data/`. There is no XLSX, PDF or receipt import, and no AI categorisation of transactions yet.
+- **Reports:**
+  - The approved report is kept in the audit trail and can be copied. It is not saved as its own document.
+  - There is no Slides output.
+- **Not yet done:**
+  - backup and restore of the hosted database
+  - an external security review
 
-Without a license, Proofline runs open-source Univer Sheets only. Setting `NEXT_PUBLIC_UNIVER_LICENSE` to the contents of Univer's `license.txt` (the browser license, designed by Univer to be sent to the client) loads the licensed preset lazily and adds a Budget vs actual chart to each imported workbook. `licenseKey.txt` is a server secret for a future Univer server and is never exposed to the browser. `.env.example` contains placeholders. Do not commit `.env.local`, the private SQLite database, client license keys, or Ant Ling API keys. Browser-visible client licenses, when permitted by Univer documentation, are different from private server keys. Verify exact edition and activation procedure before adding Pro capabilities.
+## Repository guide
 
-**Ant Ling report drafting.** With `ANT_LING_API_KEY` set on the server, signed-in users can draft a short summary of a saved, verified revision (`POST /api/workbooks/{id}/report`). Ant Ling writes the wording only. Every figure and transaction ID must appear as a fact token such as `{{total:actual}}`, which Proofline replaces with its own integer-cent value. A draft containing any other number, percentage or spelled-out number is rejected and retried once. Only verified totals, category names and transaction IDs are sent (no files or descriptions). `GET /api/ai/status` reports whether drafting is configured, without exposing the key. Live calls against Ant Ling's API are recorded in the build ledger once they have actually succeeded.
+- `components/Workspace.tsx`: the `/app` workspace. `UniverPanel.tsx` holds the sheet, `ReportEditor.tsx` the Docs report.
+- `components/landing/`: the landing page at `/`.
+- `tests/`: unit tests, run with Node's test runner.
+- `docs/BUILD_LEDGER.md`: dated log of every question, issue, decision and milestone, with the commands run and their results.
+- `docs/CONTRIBUTION_MAP.md`: what was built with Univer and Ant Ling, and what is proven versus planned.
+- `docs/evidence/`: screenshots referenced by the ledger.
+- `AGENTS.md`: rules for coding agents working in this repo.
 
-## Project evidence log
+## References
 
-- `AGENTS.md` — coding agent instructions, including mandatory journaling.
-- `docs/BUILD_LEDGER.md` — append-only Q/I/D/M log.
-- `docs/CONTRIBUTION_MAP.md` — traceable Univer / Ant Ling / Builder public contributions.
-- `docs/CLIENT_SCOPE.md` — agreement points to establish.
-- `docs/ACCEPTANCE.md` — observable evidence checklist.
-
-## Official sources
-- Univer Next.js: https://docs.univer.ai/guides/sheets/getting-started/integrations/nextjs
-- Univer Sheets Facade: https://docs.univer.ai/guides/sheets/features/core/range-selection
-- Univer snapshot: https://docs.univer.ai/guides/sheets/features/core/sheets-api
-- Official SDK skills: https://github.com/dream-num/skills
-- Univer Pro licensing: https://docs.univer.ai/guides/server-integration/license
-- Univer server integration boundary: https://docs.univer.ai/server
-- Node SQLite API: https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html
-- Vercel Marketplace PostgreSQL: https://vercel.com/docs/marketplace-storage
+- Univer with Next.js: https://docs.univer.ai/guides/sheets/getting-started/integrations/nextjs
+- Univer licensing: https://docs.univer.ai/guides/server-integration/license
+- Univer SDK skills: https://github.com/dream-num/skills
+- Ant Ling open platform: https://chat.ant-ling.com/open
