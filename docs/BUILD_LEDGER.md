@@ -364,3 +364,26 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Evidence:** `docs/evidence/m020-category-review-suggestions.jpg`, `docs/evidence/m020-claim-category-note.jpg`, `docs/evidence/m020-history-categories-reviewed.jpg`.
 - **Not done / limits:** Live run with the real Ant Ling key after merge. No learning from earlier decisions. Up to 40 rows per request. Receipts/PDF and Slides remain open.
 - **Status:** Built and verified locally; PR pending owner review.
+
+### M-021 | 2026-11-05 | Live verification of category suggestions and the Docs report; README with images
+- **Source/trigger:** Owner merged PR #7 ("you know what to do") and had asked whether Ant Ling works well enough and why the README looked bland.
+- **Expected:**
+  - Run the new Ant Ling features on the deployed site with the real key.
+  - Give the README real screenshots without misrepresenting what produced them.
+- **Live check:**
+  - The production deployment of the PR #7 merge `a623018` was Ready. `/api/ai/status` returned `configured: true` and `Ling-3.1-flash`. `/api/ai/categorize` exists (405 on GET). No runtime errors in 24 hours.
+  - This container cannot reach vercel.app, so the browser run used a temporary Vercel Sandbox in the project (Ubuntu, Playwright 1.63.0). It was stopped afterwards after about 7 minutes, with about 1 CPU-minute active.
+  - Two synthetic accounts were created, with random passwords that were never stored: `plcheckc41732` and `plcheck85a548`. Only the sample data was used.
+- **Results:**
+  - Category suggestions came back on the first attempt (request `21d5b11217938673261508770e77e3`, 445 tokens). T-002 → Operations (high), T-004 → Logistics (high), T-005 → Community (low), T-006 → Community (low; label kept).
+  - The UI showed Confident / Check this as designed, and Build gave a Verified workbook with total 2135.00.
+  - `/categories` recorded 4 decisions and skipped 0.
+  - The draft summary passed on the first attempt (request `0b96a44317938675135231152e3c49`, 960 tokens) with 24 figures inserted by the engine.
+  - Check figures was ok with 24/24 verified. Approve returned 200, and History shows "Report approved, every figure matched". No page errors.
+- **README:**
+  - New `docs/images/` holds four screenshots: the landing hero, the workspace with a claim, the category review, and the report approved.
+  - They were rendered from a local production build without the Univer licence; the Ant Ling stand-in replayed the exact live replies above. So the suggestions and report wording shown are Ant Ling's real output, and the README says so.
+  - The README also gained live/Univer/Ant Ling/Next.js badges, a Mermaid flow diagram, the live-check summary and a reordered walkthrough.
+  - `AGENTS.md` rule 6 now names both of Ant Ling's runtime jobs.
+- **Not done / limits:** The README screenshots show no chart, because a licensed render can only come from the live site. A live screenshot can replace `docs/images/workspace.jpg` later.
+- **Status:** PR pending owner review.

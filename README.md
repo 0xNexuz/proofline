@@ -1,33 +1,75 @@
 # ProofLine
 
-ProofLine turns a budget and its transactions into a real, editable Univer spreadsheet. Ant Ling suggests categories for transactions that arrive without one, and you confirm them. ProofLine checks every total to the cent, shows the transactions behind each figure, and lets Ant Ling write the report in plain English. The model never supplies a number. Before a report can be approved, ProofLine checks each figure in it against the latest saved workbook.
+<p align="center">
+  <a href="https://proofline-alpha.vercel.app"><img src="docs/images/hero.jpg" alt="ProofLine landing page: Totals you can trace back to the receipt" width="100%"></a>
+</p>
+
+<p align="center">
+  <a href="https://proofline-alpha.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-proofline--alpha.vercel.app-2B9A5A?style=flat-square"></a>
+  <img alt="Univer Sheets and Docs 1.3.1" src="https://img.shields.io/badge/Univer-Sheets%20%2B%20Docs%201.3.1-2353E6?style=flat-square">
+  <img alt="Ant Ling Ling-3.1-flash" src="https://img.shields.io/badge/Ant%20Ling-Ling--3.1--flash-E8A33D?style=flat-square">
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-16181D?style=flat-square">
+</p>
+
+ProofLine turns a budget and its transactions into a real, editable Univer spreadsheet:
+- Ant Ling suggests categories for transactions that arrive without one, and you confirm them.
+- ProofLine checks every total to the cent and shows the transactions behind each figure.
+- Ant Ling writes the report in plain English, but it never supplies a number.
+- Before a report can be approved, ProofLine checks each of its figures against the latest saved workbook.
 
 **Live:** https://proofline-alpha.vercel.app (the workspace is at `/app`). It runs on free Vercel and Neon tiers, so please use the sample data or other made-up figures.
 
+## See it
+
+<p align="center"><img src="docs/images/workspace.jpg" alt="The workspace: a Univer workbook on the left, the claim inspector on the right showing Logistics actual 890.00 traced to transactions T-003 and T-004" width="100%"></p>
+<p align="center"><sub>The workbook is a real Univer spreadsheet. Click any figure to see how it was calculated and which rows it came from, including how each category was chosen.</sub></p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/category-review.jpg" alt="Review categories: Ant Ling suggests Operations and Logistics with confidence, and asks for a check on Community"></td>
+    <td width="50%"><img src="docs/images/report-approved.jpg" alt="The draft opened in Univer Docs, approved after 24 figures matched the cent engine"></td>
+  </tr>
+  <tr>
+    <td><b>Ant Ling suggests, you confirm.</b> Three transactions arrive with no category. Ant Ling says where each belongs and how sure it is, and you confirm the unsure ones. It never sees an amount.</td>
+    <td><b>A report you can approve.</b> The draft opens in Univer Docs. Type a number ProofLine didn't verify, or change a cell after drafting, and approval is refused until the figures match again.</td>
+  </tr>
+</table>
+
+<sub>The screenshots come from a local build without the Univer licence; the live site also shows a Univer Budget vs actual chart. The suggestions and report wording in them are Ant Ling's own replies from the live site.</sub>
+
+**Live check, 5 November 2026:** on the deployed site with the real Ant Ling key:
+- Category suggestions were returned on the first try (445 tokens).
+- The draft summary passed the number rule on the first try, with 24 figures inserted by the engine (960 tokens).
+- Check figures matched 24 of 24, and the approval was recorded in the workbook history.
+
 ## Try it in two minutes
 
-1. Open `/app` and choose **Load sample**. The sample has three budget lines and six transactions.
-2. Click a category in **Verified totals**. The claim inspector shows how the figure was calculated and which rows it came from.
-3. Change an amount in the sheet, for example cell E14 (T-004). The totals re-check, and the Univer chart moves with them.
-4. **Sign in** (create an account), then **Save revision**.
-5. Choose **Draft summary**. Ant Ling writes the wording, and each figure appears as a chip that opens its claim.
-6. Choose **Open as report** to open the draft in Univer Docs, then edit it.
-   - **Check figures** flags any number you typed yourself, and any figure that changed after the draft was written.
-   - **Approve report** saves an approval in the workbook history, but only once every figure matches.
+1. Open `/app`. **Load sample** shows the workbook straight away, with no account needed.
+2. **Sign in** (create an account). Then choose **Import CSVs** → **Sample with blank categories** → **Suggest categories**.
+   - Confident suggestions are filled in.
+   - Uncertain ones wait for **Confirm**.
+   - A label the file already gives, such as "Outreach", stays unless you choose **Use …**.
 
-To see the categorisation step, sign in first, then choose **Import CSVs** → **Sample with blank categories** → **Suggest categories**:
-- Confident suggestions are filled in.
-- Uncertain ones wait for **Confirm**.
-- A label the file already gives (such as "Outreach") stays as it is unless you choose **Use …**.
+   Then choose **Build workbook**.
+3. Click a category in **Verified totals**. The claim inspector shows the calculation and its source rows.
+4. Change an amount in the sheet, for example cell E14 (T-004). The totals re-check, and the chart moves with them.
+5. Choose **Save revision**, then **Draft summary**. Each figure in the draft is a chip that opens its claim.
+6. Choose **Open as report** and edit the report in Univer Docs.
+   - **Check figures** flags any number you typed, and any figure changed by a later save.
+   - **Approve report** records the approval once every figure matches.
 
 ## How it works
 
-```
-CSV files ─► category review (Ant Ling suggests, you confirm) ─► Univer Sheets workbook ─► cent engine re-reads the cells ─► verified claims (with source rows)
-                                                                            │
-                     Ant Ling writes wording with {{fact tokens}} ◄─────────┘
-                                                                            │
-     Univer Docs report ─► figure check against the latest revision ─► approval in the audit trail
+```mermaid
+flowchart TD
+  A[Budget and transaction CSVs] --> B{Any blank categories?}
+  B -- yes --> C[Ant Ling suggests a category,<br/>you confirm]
+  B -- no --> D
+  C --> D[Univer Sheets workbook]
+  D --> E[Cent engine re-reads the cells on every edit<br/>and links each figure to its source rows]
+  E --> G[Ant Ling drafts the wording,<br/>every figure inserted as a token]
+  G --> H[Univer Docs report]
+  H --> I[Figure check against the latest revision,<br/>then approval in the audit trail]
 ```
 
 - **Cent engine** (`lib/finance.ts`, `lib/verification.ts`): parses and validates the CSVs, then does all arithmetic in integer cents. Every claim carries its calculation and source transaction IDs. If an edit leaves the data invalid, the claim is withheld instead of guessed. Moving or deleting rows also withholds claims until the next clean import.
