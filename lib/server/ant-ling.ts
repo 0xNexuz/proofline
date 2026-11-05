@@ -51,12 +51,12 @@ function numberOrNull(value: unknown): number | null {
 }
 
 export async function chatCompletion(config: AntLingConfig, messages: ChatMessage[],
-  options: { fetchImpl?: FetchLike; timeoutMs?: number; temperature?: number } = {}): Promise<ChatResult> {
+  options: { fetchImpl?: FetchLike; timeoutMs?: number; temperature?: number; maxTokens?: number } = {}): Promise<ChatResult> {
   const fetchImpl = options.fetchImpl ?? (fetch as FetchLike);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 45_000);
   const payload: Record<string, unknown> = {
-    model: config.model, messages, stream: false, temperature: options.temperature ?? 0.2, max_tokens: 700,
+    model: config.model, messages, stream: false, temperature: options.temperature ?? 0.2, max_tokens: options.maxTokens ?? 700,
   };
   // Ant Ling-specific switch: skip the reasoning phase for a short drafting task (faster, fewer tokens).
   if (isAntLingHost(config.baseUrl)) payload.thinking = { type: 'disabled' };
@@ -93,7 +93,7 @@ export async function chatCompletion(config: AntLingConfig, messages: ChatMessag
   try { data = await response.json() as typeof data; }
   catch { throw new AntLingError('bad_response', 'Ant Ling returned a response that was not JSON'); }
   const content = data.choices?.[0]?.message?.content;
-  if (typeof content !== 'string' || !content.trim()) throw new AntLingError('bad_response', 'Ant Ling returned an empty draft');
+  if (typeof content !== 'string' || !content.trim()) throw new AntLingError('bad_response', 'Ant Ling returned an empty response');
   return {
     content,
     model: typeof data.model === 'string' ? data.model : config.model,

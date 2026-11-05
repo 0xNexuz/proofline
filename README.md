@@ -1,6 +1,6 @@
 # ProofLine
 
-ProofLine turns a budget and its transactions into a real, editable Univer spreadsheet. It checks every total to the cent, shows the transactions behind each figure, and lets Ant Ling write the report in plain English. The model never supplies a number. Before a report can be approved, ProofLine checks each figure in it against the latest saved workbook.
+ProofLine turns a budget and its transactions into a real, editable Univer spreadsheet. Ant Ling suggests categories for transactions that arrive without one, and you confirm them. ProofLine checks every total to the cent, shows the transactions behind each figure, and lets Ant Ling write the report in plain English. The model never supplies a number. Before a report can be approved, ProofLine checks each figure in it against the latest saved workbook.
 
 **Live:** https://proofline-alpha.vercel.app (the workspace is at `/app`). It runs on free Vercel and Neon tiers, so please use the sample data or other made-up figures.
 
@@ -15,10 +15,15 @@ ProofLine turns a budget and its transactions into a real, editable Univer sprea
    - **Check figures** flags any number you typed yourself, and any figure that changed after the draft was written.
    - **Approve report** saves an approval in the workbook history, but only once every figure matches.
 
+To see the categorisation step, sign in first, then choose **Import CSVs** → **Sample with blank categories** → **Suggest categories**:
+- Confident suggestions are filled in.
+- Uncertain ones wait for **Confirm**.
+- A label the file already gives (such as "Outreach") stays as it is unless you choose **Use …**.
+
 ## How it works
 
 ```
-CSV files ─► Univer Sheets workbook ─► cent engine re-reads the cells ─► verified claims (with source rows)
+CSV files ─► category review (Ant Ling suggests, you confirm) ─► Univer Sheets workbook ─► cent engine re-reads the cells ─► verified claims (with source rows)
                                                                             │
                      Ant Ling writes wording with {{fact tokens}} ◄─────────┘
                                                                             │
@@ -31,6 +36,11 @@ CSV files ─► Univer Sheets workbook ─► cent engine re-reads the cells �
   - an append-only audit trail
   - SQLite locally, PostgreSQL on Vercel
   - each saved snapshot is re-verified on the server
+- **Category review** (`components/CategoryReview.tsx`, `lib/server/categorize.ts`):
+  - A transactions file may leave the category blank. Those rows, plus labels that match no budget line, are reviewed before the workbook is built.
+  - Ant Ling's suggestions are validated on the server: only real budget category names, only the IDs that were asked about, and short reasons.
+  - A suggestion that would change a label the file already states is always marked "Check this". Nothing reaches the workbook until you choose it.
+  - After the first save, the choices are checked against the saved revision and added to its history.
 - **Report check** (`lib/server/report-check.ts`):
   - Every number in an edited report must be one of the following:
     - a current engine figure
@@ -54,8 +64,14 @@ The licensed preset loads only when `NEXT_PUBLIC_UNIVER_LICENSE` is set. That va
 
 ## Ant Ling
 
-Ant Ling (`Ling-3.1-flash` through Ant Ling's OpenAI-compatible API) runs on the server and writes report wording only.
+Ant Ling (`Ling-3.1-flash` through Ant Ling's OpenAI-compatible API) runs on the server for two jobs. It never supplies a number.
 
+**Category suggestions.**
+- It receives only the ID, description and current label of the rows under review, plus the budget category names. It never receives amounts or files.
+- It answers in JSON with a category, a confidence and a short reason for each row.
+- Anything outside the budget names or the rows asked about is dropped. A reply that is not valid JSON is retried once.
+
+**Report wording.**
 - It receives the verified totals, category names and transaction IDs. It does not receive your files or transaction descriptions.
 - It must write every figure as a token such as `{{total:actual}}`. ProofLine replaces each token with the engine's value.
 - A draft that contains any digit, percentage, currency sign or spelled-out number outside a token is rejected and retried once. If the retry fails too, no draft is shown.
@@ -67,7 +83,7 @@ Requires Node 24 (`engines` in `package.json`). Local storage uses Node's built-
 
 ```bash
 npm install
-npm test          # 43 tests
+npm test          # 49 tests
 npm run typecheck
 npm run build
 npm run dev       # http://localhost:3000, workspace at /app
@@ -92,7 +108,8 @@ Without a database URL, data is stored in `.proofline-data/` (ignored by Git).
 
 These are the honest gaps today:
 
-- **Input:** only CSV with the template columns in `data/`. There is no XLSX, PDF or receipt import, and no AI categorisation of transactions yet.
+- **Input:** only CSV with the template columns in `data/`. There is no XLSX, PDF or receipt import.
+- **Categories:** Ant Ling suggests from the budget's own category names only. It does not learn from earlier choices, and it reviews up to 40 rows per request.
 - **Reports:**
   - The approved report is kept in the audit trail and can be copied. It is not saved as its own document.
   - There is no Slides output.
@@ -102,7 +119,7 @@ These are the honest gaps today:
 
 ## Repository guide
 
-- `components/Workspace.tsx`: the `/app` workspace. `UniverPanel.tsx` holds the sheet, `ReportEditor.tsx` the Docs report.
+- `components/Workspace.tsx`: the `/app` workspace. `UniverPanel.tsx` holds the sheet, `CategoryReview.tsx` the import review and `ReportEditor.tsx` the Docs report.
 - `components/landing/`: the landing page at `/`.
 - `tests/`: unit tests, run with Node's test runner.
 - `docs/BUILD_LEDGER.md`: dated log of every question, issue, decision and milestone, with the commands run and their results.

@@ -109,7 +109,12 @@ export function parseBudgets(text: string): Budget[] {
   });
 }
 
-export function parseTransactions(text: string): Transaction[] {
+/**
+ * `allowBlankCategory` is for the import review step only: a blank category is returned as '' so the
+ * user can choose one (optionally with Ant Ling's suggestion) before any analysis runs. `analyze` and
+ * workbook verification always use the strict default.
+ */
+export function parseTransactions(text: string, options: { allowBlankCategory?: boolean } = {}): Transaction[] {
   const rows = records(text, ['id', 'date', 'category', 'description', 'amount']);
   const seen = new Set<string>();
   return rows.map(([id, date, category, description, amount], index) => {
@@ -127,7 +132,7 @@ export function parseTransactions(text: string): Transaction[] {
     return {
       id: txId,
       date: normalizedDate,
-      category: safeText(category, 'Category', row),
+      category: options.allowBlankCategory && !category.trim() ? '' : safeText(category, 'Category', row),
       description: safeText(description, 'Description', row),
       amountCents: toCents(amount, row),
       sourceRow: row,
@@ -172,6 +177,15 @@ export function analyze(budgets: Budget[], transactions: Transaction[]): Analysi
   return {
     budgets, transactions, summaries, budgetTotalCents, actualTotalCents,
     exceptionCount: summaries.filter(x => x.status !== 'within budget').length,
+  };
+}
+
+/** Transactions whose category is blank or does not match a budget line (case-insensitive). */
+export function categoryGaps(budgets: Budget[], transactions: Transaction[]) {
+  const known = new Set(budgets.map(budget => budget.category.toLowerCase()));
+  return {
+    blank: transactions.filter(tx => !tx.category),
+    unmatched: transactions.filter(tx => tx.category && !known.has(tx.category.toLowerCase())),
   };
 }
 

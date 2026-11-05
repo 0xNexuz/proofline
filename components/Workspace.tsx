@@ -3,13 +3,14 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import type { Analysis } from '@/lib/finance';
-import { analyze, parseBudgets, parseTransactions } from '@/lib/finance';
+import type { Analysis, Budget, Transaction } from '@/lib/finance';
+import { analyze, categoryGaps, parseBudgets, parseTransactions } from '@/lib/finance';
 import { initialVerification, verificationReducer, type VerificationPhase } from '@/lib/verification';
 import ClaimInspector from '@/components/ClaimInspector';
 import AccountPanel, { type AccountUser, type WorkbookItem } from '@/components/AccountPanel';
 import ReportDraft from '@/components/ReportDraft';
 import TotalsPanel from '@/components/TotalsPanel';
+import CategoryReview, { type CategoryDecision } from '@/components/CategoryReview';
 
 function EditorLoading() {
   return <section className="ws-card ws-sheet-card" aria-label="Univer spreadsheet"><div className="ws-editor-loading" role="status">
@@ -20,7 +21,10 @@ const UniverPanel = dynamic(() => import('@/components/UniverPanel'), { ssr: fal
 const PHASE_LABEL: Record<VerificationPhase, string> = { idle: 'No workbook', stale: 'Re-checking', verified: 'Verified', invalid: 'Totals on hold' };
 const SAMPLE_BUDGET = `category,budget\nOperations,1500.00\nLogistics,700.00\nCommunity,800.00`;
 const SAMPLE_TX = `id,date,category,description,amount\nT-001,2026-10-01,Operations,Laptop supplies,250.00\nT-002,2026-10-02,Operations,Workspace utilities,640.00\nT-003,2026-10-03,Logistics,Transport to field site,500.00\nT-004,2026-10-05,Logistics,Additional transport,390.00\nT-005,2026-10-08,Community,Community materials,275.00\nT-006,2026-10-09,Outreach,Unbudgeted activity,80.00`;
+// Same budget and amounts as the main sample, but three transactions arrive without a category.
+const SAMPLE_TX_UNCATEGORISED = `id,date,category,description,amount\nT-001,2026-10-01,Operations,Laptop supplies,250.00\nT-002,2026-10-02,,Electricity and internet for October,640.00\nT-003,2026-10-03,Logistics,Transport to field site,500.00\nT-004,2026-10-05,,Fuel for the second field trip,390.00\nT-005,2026-10-08,,Printed flyers for the town hall,275.00\nT-006,2026-10-09,Outreach,Radio jingle for the launch,80.00`;
 const LOCAL_KEY = 'proofline:p0:local-workbook';
+type Review = { budgets: Budget[]; transactions: Transaction[]; blank: Transaction[]; unmatched: Transaction[] };
 type RemoteLoad = { sequence: number; snapshot: object; status: string; error: string | null };
 
 async function api<T>(url: string, method = 'GET', payload?: unknown): Promise<T> {
@@ -53,6 +57,10 @@ export default function Workspace() {
   const [claimFocus, setClaimFocus] = useState<{ id: string; seq: number } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [review, setReview] = useState<Review | null>(null);
+  // Category choices confirmed at import; recorded in the audit trail after the first save.
+  const [categoryLog, setCategoryLog] = useState<{ decisions: CategoryDecision[]; model: string | null } | null>(null);
+  const [categoryNotes, setCategoryNotes] = useState<Record<string, { category: string; text: string }>>({});
   const focusClaim = useCallback((id: string) => setClaimFocus(current => ({ id, seq: (current?.seq ?? 0) + 1 })), []);
 
   useEffect(() => {
@@ -80,6 +88,8 @@ export default function Workspace() {
     try {
       const result = await api<{ user: AccountUser }>('/api/auth', 'POST', { action, username, password });
       setUser(result.user);
+      setCategoryLog(null);
+      setCategoryNotes({});
       dispatchVerification({ type: 'reset' });
       setImportAnalysis(null);
       setRemoteLoad(null);
@@ -102,6 +112,8 @@ export default function Workspace() {
       const result = await api<{ id: string; revision: number; title: string; snapshot: object; status: string; error: string | null }>(`/api/workbooks/${encodeURIComponent(id)}`);
       setSelected({ id: result.id, revision: result.revision, title: result.title });
       setImportAnalysis(null);
+      setCategoryLog(null);
+      setCategoryNotes({});
       setRemoteLoad({ sequence: Date.now(), snapshot: result.snapshot, status: result.status, error: result.error });
       setAudit([]);
       setAccountOpen(false);
@@ -130,6 +142,15 @@ export default function Workspace() {
       target ? `/api/workbooks/${encodeURIComponent(target.id)}` : '/api/workbooks', target ? 'PUT' : 'POST', payload);
     pendingSave.current = null;
     setSelected({ id: result.id, revision: result.revision, title });
+    if (categoryLog && !migration && result.status === 'verified') {
+      const log = categoryLog;
+      setCategoryLog(null);
+      try {
+        await api(`/api/workbooks/${encodeURIComponent(result.id)}/categories`, 'POST', { revision: result.revision, ...log });
+      } catch (caught) {
+        setAccountError(`Revision saved, but the category review could not be added to its history: ${caught instanceof Error ? caught.message : String(caught)}`);
+      }
+    }
     try { await refreshWorkbooks(); }
     catch { setAccountError('Revision saved, but the workbook list could not refresh. Reload to see it.'); }
     return result;
@@ -153,7 +174,31 @@ export default function Workspace() {
   function run(budget = budgetCsv, transactions = transactionCsv) {
     try {
       if (!budget || !transactions) throw new Error('Choose both budget and transaction CSV files first.');
-      const result = analyze(parseBudgets(budget), parseTransactions(transactions));
+      const budgets = parseBudgets(budget);
+      const parsed = parseTransactions(transactions, { allowBlankCategory: true });
+      const gaps = categoryGaps(budgets, parsed);
+      if (gaps.blank.length) {
+        // Rows without a category go through review (with Ant Ling's suggestions when signed in) first.
+        setReview({ budgets, transactions: parsed, ...gaps });
+        setError('');
+        setImportOpen(true);
+        return;
+      }
+      build(budgets, parsed, null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  function build(budgets: Budget[], transactions: Transaction[], log: { decisions: CategoryDecision[]; model: string | null } | null) {
+    try {
+      const result = analyze(budgets, transactions);
+      setCategoryLog(log);
+      setCategoryNotes(log ? Object.fromEntries(log.decisions.filter(item => item.outcome !== 'kept').map(item => [item.id, { category: item.to,
+        text: item.outcome === 'accepted' ? `Category set at import from Ant Ling's suggestion (${item.confidence === 'high' ? 'confident' : 'confirmed by you'}).`
+          : item.outcome === 'changed' ? `Category chosen at import; Ant Ling had suggested ${item.suggested}.`
+          : 'Category chosen at import.' }])) : {});
+      setReview(null);
       dispatchVerification({ type: 'stale' });
       setSelected(null);
       setRemoteLoad(null);
@@ -164,6 +209,19 @@ export default function Workspace() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
+  }
+
+  function finishReview(choices: Record<string, string>, decisions: CategoryDecision[], model: string | null) {
+    if (!review) return;
+    build(review.budgets, review.transactions.map(tx => choices[tx.id] ? { ...tx, category: choices[tx.id] } : tx), { decisions, model });
+  }
+
+  function loadUncategorisedExample() {
+    setBudgetCsv(SAMPLE_BUDGET);
+    setTransactionCsv(SAMPLE_TX_UNCATEGORISED);
+    setBudgetFilename('sample-budget.csv');
+    setTxFilename('sample-transactions-uncategorised.csv');
+    run(SAMPLE_BUDGET, SAMPLE_TX_UNCATEGORISED);
   }
 
   function loadExample() {
@@ -229,7 +287,7 @@ export default function Workspace() {
 
         <aside className="ws-rail" aria-label="Verified results">
           <TotalsPanel verification={verification} onFocusClaim={focusClaim} onLoadSample={loadExample} />
-          <ClaimInspector verification={verification} focus={claimFocus} />
+          <ClaimInspector verification={verification} focus={claimFocus} notes={categoryNotes} />
           {user ? <ReportDraft workbook={selected} onFocusClaim={focusClaim} />
             : <section className="ws-card ws-note"><h2>Report summary</h2>
               <p>Sign in and save a workbook to draft a summary with Ant Ling. It writes the wording; every figure comes from the cent engine.</p>
@@ -239,12 +297,15 @@ export default function Workspace() {
       </div>
 
       {importOpen && <div className="ws-layer" onMouseDown={event => { if (event.target === event.currentTarget) setImportOpen(false); }}>
-        <div className="ws-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
+        <div className={`ws-dialog${review ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="import-title">
           <div className="ws-dialog-head">
-            <h2 id="import-title">Import CSVs</h2>
+            <h2 id="import-title">{review ? 'Review categories' : 'Import CSVs'}</h2>
             <button type="button" className="ws-close" aria-label="Close" onClick={() => setImportOpen(false)}>×</button>
           </div>
-          <p className="fineprint">Choose a budget file and a transactions file. The workbook is rebuilt from them and every total is checked again.</p>
+          {review ? <CategoryReview key={`${txFilename}:${review.transactions.length}`} categories={review.budgets.map(budget => budget.category)}
+            blank={review.blank} unmatched={review.unmatched} signedIn={Boolean(user)} onSignIn={() => setAccountOpen(true)}
+            onBack={() => setReview(null)} onBuild={finishReview} /> : <>
+          <p className="fineprint">Choose a budget file and a transactions file. The workbook is rebuilt from them and every total is checked again. Transactions may leave the category blank: you will choose one for each, with suggestions from Ant Ling when you are signed in.</p>
           <div className="input-row">
             <label className="file-input"><strong>Budget</strong><span>{budgetFilename}</span><code>category,budget</code>
               <input type="file" accept=".csv,text/csv" onChange={e => void chooseCsv(e.target.files?.[0], 'budget')} /></label>
@@ -253,9 +314,10 @@ export default function Workspace() {
           </div>
           {error && <p role="alert" className="error">{error}</p>}
           <div className="button-row end">
-            <button type="button" onClick={loadExample}>Use the sample instead</button>
+            <button type="button" onClick={loadExample}>Use the sample</button>
+            <button type="button" onClick={loadUncategorisedExample}>Sample with blank categories</button>
             <button className="primary" type="button" onClick={() => run()}>Build workbook</button>
-          </div>
+          </div></>}
         </div>
       </div>}
 

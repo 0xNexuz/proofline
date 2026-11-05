@@ -4,10 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { money } from '@/lib/finance';
 import { buildClaims, type VerificationState } from '@/lib/verification';
 
-export default function ClaimInspector({ verification, focus = null }: {
+export default function ClaimInspector({ verification, focus = null, notes = {} }: {
   verification: VerificationState;
   /** Opens a claim from elsewhere (e.g. a figure in a report draft). `seq` re-triggers the same claim. */
   focus?: { id: string; seq: number } | null;
+  /** Per-transaction notes, such as how its category was chosen at import. */
+  notes?: Record<string, { category: string; text: string }>;
 }) {
   const [selectedId, setSelectedId] = useState('total:actual');
   const sectionRef = useRef<HTMLElement>(null);
@@ -58,7 +60,7 @@ export default function ClaimInspector({ verification, focus = null }: {
               <strong>Budget · {budget.category}</strong><span>Sheet row {budget.sourceRow} · {money(budget.budgetCents)}</span>
             </div>)}
             {selected.sourceRecords.map(tx => <div className="source-record" key={`transaction:${tx.id}`}>
-              <strong>{tx.id} · {tx.category}</strong><span>Sheet row {tx.sourceRow} · {tx.date} · {money(tx.amountCents)}</span><small>{tx.description}</small>
+              <strong>{tx.id} · {tx.category}</strong><span>Sheet row {tx.sourceRow} · {tx.date} · {money(tx.amountCents)}</span><small>{tx.description}</small>{notes[tx.id]?.category === tx.category && <small className="source-note">{notes[tx.id].text}</small>}
             </div>)}
           </article>
         </div>

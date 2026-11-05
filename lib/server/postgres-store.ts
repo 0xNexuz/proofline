@@ -204,6 +204,17 @@ export class PostgresStore {
     return { workbookId, revision, approvedAt };
   }
 
+  async recordCategoryDecisions(ownerId: string, workbookId: string, revision: number,
+    entry: { decisions: { id: string }[]; model: string | null; skipped: number }) {
+    await this.ready;
+    await this.owned(ownerId, workbookId);
+    const recordedAt = new Date().toISOString();
+    await this.pool.query(`INSERT INTO audit(workbook_id,revision,actor_id,action,record_ids_json,before_json,after_json,verification_impact,created_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [workbookId, revision, ownerId, 'categories_confirmed', JSON.stringify(entry.decisions.map(item => item.id)), null,
+      JSON.stringify({ decisions: entry.decisions, model: entry.model, skipped: entry.skipped }), 'categories_reviewed', recordedAt]);
+    return { workbookId, revision, recorded: entry.decisions.length, skipped: entry.skipped, recordedAt };
+  }
+
   async getAudit(ownerId: string, workbookId: string) {
     await this.ready;
     await this.owned(ownerId, workbookId);
