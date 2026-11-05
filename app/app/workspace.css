@@ -185,12 +185,36 @@
 .ws-report-result.warn { background: var(--amber-soft); border-color: #F3D9A4; color: var(--amber-ink); }
 .ws-report-result ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .ws-report-result b { font-variant-numeric: tabular-nums; }
+/* Category review (import) */
+.cat-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 6px 0 14px; }
+.cat-intro p { font-size: 14px; line-height: 1.55; color: var(--ink-2); max-width: 70ch; }
+.cat-intro .fineprint { margin: 0; }
+.ws .linkish:not(.editor-host *) { padding: 0; border: 0; background: none; color: var(--blue); font-size: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.ws .linkish:not(.editor-host *):hover:not(:disabled) { background: none; color: var(--blue-deep); }
+.cat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cat-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; transition: border-color .2s ease, background-color .2s ease; }
+.cat-row.needs { border-color: #F3D9A4; background: #FFFBF2; }
+.cat-tx { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cat-tx strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.cat-tx span { font-size: 14.5px; color: var(--ink); overflow-wrap: anywhere; }
+.cat-tx small { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cat-pick { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cat-pick select { flex: 1 1 200px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+.cat-pick select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(35, 83, 230, .18); }
+.cat-ai { flex-basis: 100%; display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.cat-ai .ws-chip { flex: none; }
+.ws .cat-pick button:not(.editor-host *) { padding: 6px 11px; font-size: 13px; }
+.cat-sub { margin: 18px 0 2px !important; font-size: 14px; }
+.cat-review > .fineprint { margin-bottom: 8px; }
+.cat-foot { position: sticky; bottom: -22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px -22px -22px; padding: 14px 22px; border-top: 1px solid var(--line); background: #fff; }
+.source-note { color: var(--green-ink) !important; }
 .ws-note p { margin: 6px 0 12px; font-size: 14px; line-height: 1.5; color: var(--muted); }
 
 /* Dialog and slide-over */
 .ws-layer { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(22, 24, 29, .45); animation: ws-fade .2s ease; }
 .ws-layer.side { place-items: stretch end; padding: 0; }
-.ws-dialog { width: min(640px, 100%); padding: 22px; border-radius: 18px; background: #fff; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .5); animation: ws-pop .28s var(--ease); }
+.ws-dialog { width: min(640px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 22px; border-radius: 18px; background: #fff; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .5); animation: ws-pop .28s var(--ease); }
+.ws-dialog.wide { width: min(880px, 100%); }
 .ws-drawer { width: min(440px, 100%); height: 100%; overflow: auto; padding: 20px; background: var(--paper); box-shadow: -20px 0 60px -30px rgba(0, 0, 0, .45); animation: ws-slide .32s var(--ease); }
 .ws-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .ws-dialog-head h2 { font-family: var(--serif); font-size: 26px; font-weight: 400; letter-spacing: -.015em; }
@@ -243,6 +267,10 @@
   .ws-report { height: calc(100vh - 32px); padding: 16px; }
   .ws-report-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 1fr) auto; }
   .ws-report-side { overflow: visible; }
+}
+@media (max-width: 640px) {
+  .cat-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .cat-foot { flex-direction: column; align-items: stretch; }
 }
 @media (max-width: 720px) {
   .ws-top { flex-wrap: wrap; gap: 8px 12px; padding: 10px 16px; }

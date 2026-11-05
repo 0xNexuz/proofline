@@ -174,6 +174,17 @@ export class ProoflineStore {
     return { workbookId, revision, approvedAt };
   }
 
+  /** Appends the category choices the user confirmed (with Ant Ling's suggestions) for a saved revision. */
+  recordCategoryDecisions(ownerId: string, workbookId: string, revision: number,
+    entry: { decisions: { id: string }[]; model: string | null; skipped: number }) {
+    this.owned(ownerId, workbookId);
+    const recordedAt = new Date().toISOString();
+    this.db.prepare('INSERT INTO audit(workbook_id,revision,actor_id,action,record_ids_json,before_json,after_json,verification_impact,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(workbookId, revision, ownerId, 'categories_confirmed', JSON.stringify(entry.decisions.map(item => item.id)), null,
+        JSON.stringify({ decisions: entry.decisions, model: entry.model, skipped: entry.skipped }), 'categories_reviewed', recordedAt);
+    return { workbookId, revision, recorded: entry.decisions.length, skipped: entry.skipped, recordedAt };
+  }
+
   getAudit(ownerId: string, workbookId: string) {
     this.owned(ownerId, workbookId);
     const rows = this.db.prepare('SELECT * FROM audit WHERE workbook_id=? ORDER BY id').all(workbookId) as AuditRow[];

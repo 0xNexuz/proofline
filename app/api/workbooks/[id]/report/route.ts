@@ -4,22 +4,15 @@ import { getStore, StoreError } from '@/lib/server/store';
 import { inspectSnapshot } from '@/lib/server/snapshot';
 import { antLingConfig, AntLingError } from '@/lib/server/ant-ling';
 import { draftReport, DraftRejectedError } from '@/lib/server/report-draft';
+import { createThrottle } from '@/lib/server/throttle';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 type Context = { params: Promise<{ id: string }> };
 
-// Best-effort per-instance throttle. Ant Ling's own API allows about 2 requests per second per key.
-const recent = new Map<string, number[]>();
-function throttled(userId: string, now = Date.now()) {
-  const windowStart = now - 60 * 60 * 1000;
-  const times = (recent.get(userId) ?? []).filter(time => time > windowStart);
-  if ((times.length && now - times[times.length - 1] < 8_000) || times.length >= 30) return true;
-  times.push(now);
-  recent.set(userId, times);
-  return false;
-}
+// Ant Ling's own API allows about 2 requests per second per key.
+const throttled = createThrottle({ minGapMs: 8_000, maxPerHour: 30 });
 
 export async function POST(request: NextRequest, context: Context) {
   const denied = writeGuard(request);

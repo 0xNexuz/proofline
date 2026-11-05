@@ -328,3 +328,39 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Changes:** `README.md` rewritten: live link and a six-step walkthrough, data flow, Univer packages and Facade APIs actually used, Ant Ling's role and the number rule, local run and environment variables, limits (CSV only, no AI categorisation, no Slides, report kept in the audit trail, no hosted backup/restore or external security review), and a guide to the repo and its evidence logs.
 - **Verification:** Every API, label and command named in the README was checked against the code on this branch (`createWorkbook`, `inspectSnapshot` on save, `engines.node` 24.x, UI labels Load sample / Save revision / Draft summary / Open as report / Check figures / Approve report).
 - **Status:** In PR #6 with M-018.
+
+### M-020 | 2026-11-05 | Ant Ling category suggestions with user confirmation
+- **Source/trigger:** Owner asked to build the next proposal gap now. The proposal promises: "Review AI-suggested categorizations and confirm uncertain matches."
+- **Expected:**
+  - A transactions CSV may leave the category blank. Import then opens a review step instead of failing.
+  - Ant Ling suggests a budget category for each blank row, with a confidence and a short reason. It receives only the IDs, descriptions and labels of the rows under review, plus the budget category names.
+  - Confident suggestions for blank rows are filled in; uncertain ones must be confirmed. Ant Ling can never change a category the file already states without the user's click.
+  - The suggestions are validated on the server: only real budget category names, known IDs and short reasons.
+  - After the first save, the confirmed decisions are checked against the saved revision and appended to the audit trail.
+- **Changes:**
+  - `lib/finance.ts`: `parseTransactions(text, { allowBlankCategory })` for the review step only (strict by default, formula-looking text still refused), plus `categoryGaps`.
+  - `lib/server/categorize.ts`:
+    - validates the request (1–30 unique categories, 1–40 rows, length limits)
+    - sends the IDs, descriptions and labels as JSON data, telling the model to ignore instructions inside descriptions
+    - accepts only budget names or none, and only the IDs asked about; reasons are cut to 140 characters
+    - marks any change to an existing label as "low"; retries once on a malformed reply
+  - `POST /api/ai/categorize`: same-origin, signed in, throttled per user; returns suggestions only.
+  - `POST /api/workbooks/[id]/categories`: records only the decisions that the saved revision actually contains, as audit action `categories_confirmed` (`categories_reviewed`). Implemented for both SQLite and PostgreSQL.
+  - `components/CategoryReview.tsx`:
+    - confident suggestions for blank rows are filled in; uncertain ones need **Confirm**
+    - an existing label stays unless the user clicks **Use …**
+    - **Build workbook** stays disabled until every row is decided
+  - The claim inspector shows how each category was chosen while the cell still matches. History shows "Categories reviewed at import".
+  - New sample `data/sample-transactions-uncategorised.csv` (the same IDs and amounts as the main sample, so it reaches the same verified totals). The shared throttle moved to `lib/server/throttle.ts`. `chatCompletion` gained `maxTokens`.
+- **Tests:** `npm test` 49/49 (6 new in `tests/categorize.test.mjs`); `npm run typecheck` and `npm run build` passed.
+- **Browser (production build, local, stand-in Ant Ling on 127.0.0.1):**
+  - Signed out, the review step works without Ant Ling, and Build stays disabled while rows are blank.
+  - Signing in from the review step keeps the review open.
+  - Suggest categories: T-002 Operations and T-004 Logistics are filled in as confident. T-005 Community needs Confirm. T-006 keeps "Outreach", with "Use Community" offered.
+  - After Confirm and Build: Verified, total 2135.00, Logistics over by 190.00, Outreach flagged as unbudgeted.
+  - The claim note reads "Category set at import from Ant Ling's suggestion (confirmed by you)". Save revision 1, then History shows "Categories reviewed at import, choices match the saved revision".
+  - The stand-in logged the request: IDs, descriptions and labels only, with no amounts.
+  - On a 390 px phone there was no sideways scroll. The report flow from M-018 re-ran unchanged.
+- **Evidence:** `docs/evidence/m020-category-review-suggestions.jpg`, `docs/evidence/m020-claim-category-note.jpg`, `docs/evidence/m020-history-categories-reviewed.jpg`.
+- **Not done / limits:** Live run with the real Ant Ling key after merge. No learning from earlier decisions. Up to 40 rows per request. Receipts/PDF and Slides remain open.
+- **Status:** Built and verified locally; PR pending owner review.

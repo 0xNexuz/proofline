@@ -7,11 +7,11 @@ export type WorkbookItem = { id: string; title: string; revision: number; status
 
 const ACTION_LABELS: Record<string, string> = {
   workbook_created: 'Created', workbook_saved: 'Saved', local_import: 'Moved from this device',
-  report_approved: 'Report approved',
+  report_approved: 'Report approved', categories_confirmed: 'Categories reviewed at import',
 };
 const IMPACT_LABELS: Record<string, string> = {
   claims_verified: 'totals verified', claims_recalculated: 'totals re-checked', claims_withheld: 'totals on hold',
-  figures_verified: 'every figure matched',
+  figures_verified: 'every figure matched', categories_reviewed: 'choices match the saved revision',
 };
 
 export default function AccountPanel({ user, workbooks, selectedId, busy, error, audit,
