@@ -387,3 +387,13 @@ This file is the shared record for questions, issues, decisions, milestones, evi
   - `AGENTS.md` rule 6 now names both of Ant Ling's runtime jobs.
 - **Not done / limits:** The README screenshots show no chart, because a licensed render can only come from the live site. A live screenshot can replace `docs/images/workspace.jpg` later.
 - **Status:** PR pending owner review.
+
+### M-022 | 2026-11-05 | Default branch renamed to `main`; merged branches removed
+- **Source/trigger:** Owner approved tidying the public repo for submission.
+- **Done by owner:**
+  - Renamed `p2/server-storage-audit` to `main` on GitHub; the rename kept it the default branch.
+  - Deleted 8 feature branches. Each was first confirmed to have 0 commits not already on the default branch: `ai/categorize`, `ant-ling/report-drafts`, `docs/live-checks`, `docs/readme-visuals`, `landing/build-artwork`, `report/univer-docs`, `univer-pro/charts` and `workspace/redesign`.
+  - The agent's own attempt was blocked by its permission policy.
+- **Vercel:** Branch Tracking would not accept `main` until that branch had a deployment ("No deployments found for main"). A preview deployment of `main` at `38499ca` was created through the Vercel API (`dpl_Fwsv5vxEjCQV5fvA6Zs7JUa66k3G`) so the owner could save `main` as the production branch.
+- **Verification:** This entry's own merge into `main` should create a production deployment. That shows production now follows `main`.
+- **Status:** Waiting on owner to save Branch Tracking = `main`.
