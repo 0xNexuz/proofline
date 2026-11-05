@@ -188,6 +188,22 @@ export class PostgresStore {
       snapshot: JSON.parse(row.snapshot_json) as unknown };
   }
 
+  /** Appends a report approval to the workbook's append-only audit trail. Only the latest revision can be approved. */
+  async recordReportApproval(ownerId: string, workbookId: string, revision: number,
+    approval: { verifiedFigures: number; textSha256: string; text: string; recordIds: string[] }) {
+    await this.ready;
+    const workbook = await this.owned(ownerId, workbookId);
+    if (Number(workbook.current_revision) !== revision) {
+      throw new StoreError('conflict', 'A newer revision exists. Check the report against it before approving.');
+    }
+    const approvedAt = new Date().toISOString();
+    await this.pool.query(`INSERT INTO audit(workbook_id,revision,actor_id,action,record_ids_json,before_json,after_json,verification_impact,created_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [workbookId, revision, ownerId, 'report_approved', JSON.stringify(approval.recordIds), null,
+      JSON.stringify({ verifiedFigures: approval.verifiedFigures, textSha256: approval.textSha256, text: approval.text }),
+      'figures_verified', approvedAt]);
+    return { workbookId, revision, approvedAt };
+  }
+
   async getAudit(ownerId: string, workbookId: string) {
     await this.ready;
     await this.owned(ownerId, workbookId);

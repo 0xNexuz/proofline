@@ -1,11 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const ReportEditor = dynamic(() => import('./ReportEditor'), { ssr: false });
 
 type Segment = { type: 'text'; text: string } | { type: 'fact'; token: string; text: string; claimId: string | null };
 type Draft = {
   workbookId: string; revision: number; provider: string; model: string;
   paragraphs: Segment[][]; factsUsed: string[]; attempts: number; requestId: string | null;
+  evidence?: { token: string; label: string; text: string; sources: string[] }[];
 };
 type Status = { configured: boolean; model: string | null } | null;
 
@@ -18,6 +23,7 @@ export default function ReportDraft({ workbook, onFocusClaim }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     void fetch('/api/ai/status', { cache: 'no-store' }).then(r => r.json() as Promise<Status>)
@@ -73,9 +79,13 @@ export default function ReportDraft({ workbook, onFocusClaim }: {
               disabled={!segment.claimId} onClick={() => segment.claimId && onFocusClaim(segment.claimId)}>{segment.text}</button>)}</p>)}
         <div className="report-meta">
           <span>Drafted by {draft.provider} ({draft.model}) from revision {draft.revision}. {draft.factsUsed.length} verified figures inserted by Proofline{draft.attempts > 1 ? `; first draft rejected by the number check and rewritten` : ''}.</span>
-          <button type="button" onClick={() => void copy()}>{copied ? 'Copied' : 'Copy text'}</button>
+          <div className="button-row">
+            <button type="button" onClick={() => void copy()}>{copied ? 'Copied' : 'Copy text'}</button>
+            <button type="button" className="primary" onClick={() => setEditing(true)} disabled={!workbook}>Open as report</button>
+          </div>
         </div>
       </div>}
+      {editing && draft && workbook && createPortal(<ReportEditor workbook={workbook} draft={draft} onClose={() => setEditing(false)} />, document.querySelector('.ws') ?? document.body)}
     </section>
   );
 }

@@ -159,6 +159,21 @@ export class ProoflineStore {
       snapshot: JSON.parse(row.snapshot_json) as unknown };
   }
 
+  /** Appends a report approval to the workbook's append-only audit trail. Only the latest revision can be approved. */
+  recordReportApproval(ownerId: string, workbookId: string, revision: number,
+    approval: { verifiedFigures: number; textSha256: string; text: string; recordIds: string[] }) {
+    const workbook = this.owned(ownerId, workbookId);
+    if (workbook.current_revision !== revision) {
+      throw new StoreError('conflict', 'A newer revision exists. Check the report against it before approving.');
+    }
+    const approvedAt = new Date().toISOString();
+    this.db.prepare('INSERT INTO audit(workbook_id,revision,actor_id,action,record_ids_json,before_json,after_json,verification_impact,created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(workbookId, revision, ownerId, 'report_approved', JSON.stringify(approval.recordIds), null,
+        JSON.stringify({ verifiedFigures: approval.verifiedFigures, textSha256: approval.textSha256, text: approval.text }),
+        'figures_verified', approvedAt);
+    return { workbookId, revision, approvedAt };
+  }
+
   getAudit(ownerId: string, workbookId: string) {
     this.owned(ownerId, workbookId);
     const rows = this.db.prepare('SELECT * FROM audit WHERE workbook_id=? ORDER BY id').all(workbookId) as AuditRow[];

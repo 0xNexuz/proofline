@@ -12,8 +12,10 @@ import { chatCompletion, type AntLingConfig, type ChatMessage, type ChatResult }
 
 export type Fact = { token: string; label: string; text: string; claimId: string | null };
 export type DraftSegment = { type: 'text'; text: string } | { type: 'fact'; token: string; text: string; claimId: string | null };
+export type EvidenceItem = { token: string; label: string; text: string; sources: string[] };
 export type ReportDraft = {
   paragraphs: DraftSegment[][];
+  evidence: EvidenceItem[];
   factsUsed: string[];
   model: string;
   requestId: string | null;
@@ -152,7 +154,7 @@ export async function draftReport(input: { title: string; analysis: Analysis; co
     const result = await complete(messages);
     const checked = validateAndRender(result.content, facts, input.analysis.summaries.map(summary => summary.category));
     if (checked.ok) {
-      return { paragraphs: checked.paragraphs, factsUsed: checked.factsUsed, model: result.model,
+      return { paragraphs: checked.paragraphs, evidence: evidenceFor(input.analysis, facts, checked.factsUsed), factsUsed: checked.factsUsed, model: result.model,
         requestId: result.requestId, attempts: attempt, usage: result.usage };
     }
     lastReason = checked.reason;
@@ -161,3 +163,18 @@ export async function draftReport(input: { title: string; analysis: Analysis; co
   }
   throw new DraftRejectedError(`Ant Ling's draft did not pass Proofline's number check: ${lastReason}`, 2);
 }
+
+/** Evidence lines for the report: each cited figure with the transaction IDs behind its claim. */
+export function evidenceFor(analysis: Analysis, facts: Map<string, Fact>, used: string[]): EvidenceItem[] {
+  const claims = new Map(buildClaims(analysis, null).map(claim => [claim.id, claim]));
+  const items: EvidenceItem[] = [];
+  for (const token of used) {
+    if (token.startsWith('tx:') || token.startsWith('count:')) continue;
+    const fact = facts.get(token);
+    if (!fact) continue;
+    const claim = fact.claimId ? claims.get(fact.claimId) : undefined;
+    items.push({ token, label: fact.label, text: fact.text, sources: claim?.sourceRecords.map(tx => tx.id) ?? [] });
+  }
+  return items;
+}
+
