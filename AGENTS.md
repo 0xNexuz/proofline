@@ -8,7 +8,7 @@ Read `docs/BUILD_LEDGER.md`, `docs/CONTRIBUTION_MAP.md`, and `docs/CLIENT_SCOPE.
 3. Treat all financial input as untrusted. Test CSV parsing, injection, duplicates, and invalid amounts. Do not log source documents or secrets.
 4. Keep coordinated `@univerjs/*` and `@univerjs-pro/*` SDK packages on exactly matching release versions. Follow the exact transitive version required for separately versioned `@univerjs/icons` (the 1.3.1 SDK packages require icons 1.46.0); do not override it to the SDK release number. Check Pro rights and license compatibility before adding features.
 5. Never put `UNIVER_LICENSE_KEY`, Ant Ling API keys, or other backend secrets in the browser, Git, screenshots, or replies.
-6. **Ant Ling currently powers coding through Codex.** This is *development tooling*, not evidence that the released product runs Ant Ling inference. If later requested, add explicit server-side runtime integration and test it independently.
+6. **Ant Ling runs inside the product for report wording only** (server-side, `ANT_LING_API_KEY`; first live call M-017). Its output never certifies a number: every figure is a fact token filled by the integer-cent engine. Do not describe Codex/coding use of Ant Ling unless the owner confirms it.
 7. Do not claim features, live integrations, benchmarks, or deployments that have not been reproduced.
 8. Do not publish client details, agreement terms, data, or repo code without authorization.
 

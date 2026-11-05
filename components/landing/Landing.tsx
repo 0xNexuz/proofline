@@ -6,18 +6,12 @@ import TracePill from './TracePill';
 import { PARTS } from './parts';
 
 const FACTS = [
-  { title: 'Univer Sheets 1.3.1', text: 'Open-source SDK with real cells and formulas', icon: 'grid' },
-  { title: '25 automated tests', text: 'Parsing, edits, ownership and audit', icon: 'check' },
+  { title: 'Univer Sheets 1.3.1', text: 'Licensed SDK with real cells, formulas and charts', icon: 'grid' },
+  { title: '35 automated tests', text: 'Parsing, edits, ownership, audit and AI drafts', icon: 'check' },
   { title: 'Whole-cent maths', text: 'Totals never rely on floating point', icon: 'cent' },
   { title: 'Saved versions', text: 'Private, with an append-only audit trail', icon: 'stack' },
 ] as const;
 
-const STEPS = [
-  { title: 'The workbook loads', text: 'Univer Sheets runs inside the app, and budget and transaction CSVs import with live formulas.', done: true },
-  { title: 'Edits re-check themselves', text: 'Change a cell and the affected totals pause, then re-check to the cent. Duplicate IDs and malformed amounts are caught.', done: true },
-  { title: 'Private and auditable', text: 'Accounts, saved versions and an audit trail, hosted on Vercel with Postgres.', done: true },
-  { title: 'Reports with sources', text: 'Ant Ling drafts the report wording from checked totals, and the report opens in Univer Docs.', done: false },
-];
 
 function FactIcon({ name }: { name: (typeof FACTS)[number]['icon'] }) {
   return (
@@ -47,7 +41,6 @@ export default function Landing() {
           <Link href="/" className="lp-brand" aria-label="ProofLine home">PROOFLINE<span>.</span></Link>
           <div className="lp-nav-links">
             <a href="#how">How it works</a>
-            <a href="#build">Build log</a>
             <Link href="/app" className="lp-btn lp-btn-light">Open workspace</Link>
           </div>
         </nav>
@@ -55,7 +48,7 @@ export default function Landing() {
         <div className="lp-hero-grid">
           <div className="lp-hero-copy">
             <h1>Totals you can trace back to the receipt.</h1>
-            <p className="lp-lede">We’re building ProofLine in the open. Budgets and transactions become a live Univer workbook, and every total is re-checked to the cent whenever a cell changes.</p>
+            <p className="lp-lede">Budgets and transactions become a live Univer workbook. Every total is re-checked to the cent whenever a cell changes, and every figure links back to the rows it came from.</p>
             <TracePill />
             <div className="lp-ctas">
               <Link href="/app" className="lp-btn lp-btn-light">Open the workspace</Link>
@@ -72,7 +65,7 @@ export default function Landing() {
           <div className="lp-wrap lp-how-grid">
             <div className="lp-how-intro">
               <h2 id="how-title">Four parts, and only one of them certifies the numbers.</h2>
-              <p>The spreadsheet is for editing. The cent engine is for checking. When AI arrives, it only writes words, and every figure in those words still comes from a checked total.</p>
+              <p>The spreadsheet is for editing. The cent engine is for checking. Ant Ling only writes words, and every figure in those words comes from a checked total.</p>
             </div>
             <ul className="lp-parts">
               {PARTS.map(part => (
@@ -82,13 +75,12 @@ export default function Landing() {
                     <h3>{part.name}</h3>
                     <p>{part.text}</p>
                   </div>
-                  <span className={`lp-status ${part.status === 'Live' ? 'is-live' : 'is-next'}`}>{part.status === 'Live' ? 'Live' : 'In progress'}</span>
                 </li>
               ))}
             </ul>
           </div>
           <div className="lp-wrap">
-            <ul className="lp-facts" aria-label="Build facts">
+            <ul className="lp-facts" aria-label="Key facts">
               {FACTS.map(fact => (
                 <li key={fact.title}><FactIcon name={fact.icon} /><strong>{fact.title}</strong><span>{fact.text}</span></li>
               ))}
@@ -96,23 +88,8 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="lp-build" id="build" aria-labelledby="build-title">
+        <section className="lp-build" id="try" aria-label="Try ProofLine">
           <div className="lp-wrap">
-            <div className="lp-build-head">
-              <h2 id="build-title">Build log</h2>
-              <p>ProofLine ships in stages. Each one is tested in a real browser before the next one starts.</p>
-            </div>
-            <ol className="lp-steps">
-              {STEPS.map((step, i) => (
-                <li key={step.title} className={step.done ? 'is-done' : 'is-next'}>
-                  <span className="lp-step-mark" aria-hidden="true">{step.done ? (
-                    <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4l8 -9" /></svg>) : i + 1}</span>
-                  <span className="lp-step-state">{step.done ? 'Shipped' : 'Next'}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.text}</p>
-                </li>
-              ))}
-            </ol>
             <div className="lp-cta-band">
               <p>See a total re-check itself. Load the sample budget, change one amount, and open the claim it affects.</p>
               <Link href="/app" className="lp-btn lp-btn-light">Open the workspace</Link>
@@ -124,7 +101,7 @@ export default function Landing() {
       <footer className="lp-footer">
         <div className="lp-wrap">
           <span className="lp-brand">PROOFLINE<span>.</span></span>
-          <p>Spreadsheet editing by Univer. Checking, sources and storage by ProofLine. Ant Ling report drafting is in development. The demo uses synthetic data only.</p>
+          <p>Spreadsheet editing and charts by Univer. Checking, sources and storage by ProofLine. Report wording by Ant Ling. The demo uses synthetic data only.</p>
         </div>
       </footer>
     </div>

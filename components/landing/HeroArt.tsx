@@ -45,7 +45,7 @@ const RING = [-118, -58, 6, 66, 128, 204, 242];
 const HATCHED = new Set([2, 5]);
 
 const DEFAULT_CAPTION = {
-  chip: 'Build log',
+  chip: 'How it works',
   title: 'Built on Univer Sheets',
   text: 'The workbook is a real, editable spreadsheet. ProofLine checks its totals separately, to the cent.',
   status: null as Part['status'] | null,
@@ -184,7 +184,6 @@ export default function HeroArt() {
         <div className="lp-glass-head">
           <span className="lp-chip">{caption.chip}</span>
           <span className="lp-glass-rule" />
-          {caption.status && <span className={`lp-status ${caption.status === 'Live' ? 'is-live' : 'is-next'}`}>{caption.status}</span>}
         </div>
         <div className="lp-glass-body" key={caption.title}>
           <strong>{caption.title}</strong>

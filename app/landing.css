@@ -249,7 +249,7 @@
 /* ---------- How it works ---------- */
 .lp-how { padding: clamp(64px, 9vw, 120px) 0 clamp(48px, 7vw, 88px); }
 .lp-how-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
-.lp-how h2, .lp-build h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 4vw, 52px); line-height: 1.04; letter-spacing: -.02em; text-wrap: balance; }
+.lp-how h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(34px, 4vw, 52px); line-height: 1.04; letter-spacing: -.02em; text-wrap: balance; }
 .lp-how-intro p { margin-top: 20px; font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 44ch; }
 .lp-parts { border-top: 1.5px solid var(--ink); }
 .lp-parts li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 18px; align-items: start; padding: 22px 0; border-bottom: 1px solid var(--paper-line); }
@@ -265,7 +265,7 @@
 .lp-facts strong { font-size: 16px; font-weight: 650; }
 .lp-facts span { font-size: 14px; line-height: 1.45; color: var(--ink-soft); }
 
-/* ---------- Build log ---------- */
+/* ---------- Closing call to action ---------- */
 .lp-build {
   color: #fff; padding: clamp(64px, 9vw, 120px) 0;
   background:
@@ -273,26 +273,9 @@
     radial-gradient(40% 60% at 0% 100%, rgba(114,88,199,.35), rgba(114,88,199,0) 70%),
     var(--ink);
 }
-.lp-build-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
-.lp-build-head p { font-size: 16.5px; line-height: 1.55; color: rgba(255,255,255,.72); max-width: 44ch; }
-.lp-steps { position: relative; margin-top: 56px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
-.lp-steps::before { content: ''; position: absolute; left: 18px; right: 25%; top: 17px; height: 2px; background: var(--green); }
-.lp-steps::after { content: ''; position: absolute; left: 75%; right: 0; top: 17px; height: 2px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 6px, transparent 6px 12px); }
-.lp-steps li { position: relative; }
-.lp-step-mark {
-  position: relative; z-index: 1; display: grid; place-items: center;
-  width: 36px; height: 36px; border-radius: 50%; font-weight: 700; font-size: 15px;
-}
-.is-done .lp-step-mark { background: var(--green); }
-.is-done .lp-step-mark svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
-.is-next .lp-step-mark { background: var(--ink); box-shadow: inset 0 0 0 2px var(--amber); color: var(--amber); }
-.lp-step-state { display: block; margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.6); }
-.is-next .lp-step-state { color: var(--amber); }
-.lp-steps h3 { margin-top: 6px; font-size: 20px; font-weight: 650; letter-spacing: -.01em; }
-.lp-steps p { margin-top: 8px; font-size: 15px; line-height: 1.55; color: rgba(255,255,255,.72); }
 
 .lp-cta-band {
-  margin-top: clamp(56px, 8vw, 96px); padding: 28px 32px; border-radius: 20px;
+  padding: 28px 32px; border-radius: 20px;
   display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
   background: var(--blue);
   background-image: radial-gradient(80% 140% at 0% 0%, rgba(114,88,199,.7), rgba(114,88,199,0) 60%);
@@ -328,8 +311,6 @@
   .lp-how-grid { grid-template-columns: minmax(0, 1fr); }
   .lp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 32px; }
   .lp-facts li:nth-child(3) { border-left: 0; padding-left: 0; }
-  .lp-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 40px; }
-  .lp-steps::before, .lp-steps::after { display: none; }
 }
 @media (max-width: 640px) {
   .lp-nav-links > a:not(.lp-btn) { display: none; }
@@ -341,10 +322,6 @@
   .lp-parts .lp-status { grid-column: 2; justify-self: start; }
   .lp-facts { grid-template-columns: minmax(0, 1fr); }
   .lp-facts li, .lp-facts li:nth-child(3) { border-left: 0; padding: 0 0 20px; border-bottom: 1px solid var(--paper-line); }
-  .lp-steps { grid-template-columns: minmax(0, 1fr); }
-  .lp-steps li { padding-left: 52px; }
-  .lp-step-mark { position: absolute; left: 0; top: 0; }
-  .lp-step-state { margin-top: 6px; }
   .lp-cta-band { padding: 24px 20px; }
   .lp-cta-band .lp-btn { width: 100%; }
 }
