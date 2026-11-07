@@ -397,3 +397,22 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Vercel:** Branch Tracking would not accept `main` until that branch had a deployment ("No deployments found for main"). A preview deployment of `main` at `38499ca` was created through the Vercel API (`dpl_Fwsv5vxEjCQV5fvA6Zs7JUa66k3G`) so the owner could save `main` as the production branch.
 - **Verification:** This entry's own merge into `main` should create a production deployment. That shows production now follows `main`.
 - **Status:** Waiting on owner to save Branch Tracking = `main`.
+
+### M-023 | 2026-11-07 | Move Ant Ling drafting and category suggestions to Ling-3.2-flash
+- **Source/trigger:** The client's content notes describe ProofLine as built with Univer SDK and Ling 3.2 Flash, which Ant Ling released on 5 November 2026. The owner chose to switch before writing the posts, so the posts can describe real results.
+- **Baseline before the switch:** two runs on the live site with Ling-3.1-flash and synthetic sample data, using accounts `plcheck11828b` and `plcheck2709c4`.
+  - Category suggestions: 444 tokens, first attempt, 4.4 s and 2.4 s. T-002 Operations, T-004 Logistics and T-005 Community came back high; T-006 Community came back low.
+  - Draft: 961 and 941 tokens, first attempt, 3.6 s and 3.9 s, 23 engine facts. Check figures passed and approval was recorded both times.
+- **Change:**
+  - `ANT_LING_DEFAULT_MODEL` is now `Ling-3.2-flash`. `ANT_LING_MODEL` still overrides it, and setting it back to `Ling-3.1-flash` rolls back without a code change.
+  - The default-model test, `.env.example` and the README were updated.
+  - Nothing else changes: same endpoint, prompts and validation.
+- **Live switch:** GitHub refused pushes from the agent's session with a 403 on receive-pack, so the owner set `ANT_LING_MODEL=Ling-3.2-flash` for Production in Vercel and redeployed (`dpl_BAzft7mASRBB2eyFd8RGHeXyR5BX`). `/api/ai/status` then reported `Ling-3.2-flash`.
+- **Live results on 3.2:** two runs, accounts `plcheck9206a1` and `plcheck3a4117`.
+  - Category suggestions: 432 and 437 tokens, first attempt, 3.7 s and 2.0 s. The picks matched the 3.1 runs.
+  - Draft: 824 and 919 tokens (147 and 242 completion tokens, against 264–284 on 3.1), first attempt, 4.0 s and 3.1 s. Check figures passed and approval was recorded both times.
+  - One 3.2 draft cited no per-category amounts (12 facts). Both said Outreach "exceeded" its limit, although Outreach has no budget.
+- **Client content:** six posts, a captioned 96-second walkthrough and a PDF were prepared for the client.
+  - They were recorded on a local build of the same code with sample data.
+  - The Ant Ling stand-in replayed the exact live 3.2 replies: categorize `218295c517940732071984952eab6c` and draft `0b442eeb17940732204105499e7570`.
+- **Status:** The code default and README are on branch `ai/ling-3-2-flash`, waiting for push access. Once that branch is merged, the Vercel variable can be removed.

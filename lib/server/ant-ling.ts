@@ -8,7 +8,7 @@
  */
 
 export const ANT_LING_DEFAULT_BASE_URL = 'https://api.ant-ling.com/v1';
-export const ANT_LING_DEFAULT_MODEL = 'Ling-3.1-flash';
+export const ANT_LING_DEFAULT_MODEL = 'Ling-3.2-flash';
 
 export type AntLingConfig = { apiKey: string; baseUrl: string; model: string };
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
