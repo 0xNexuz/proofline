@@ -397,3 +397,14 @@ This file is the shared record for questions, issues, decisions, milestones, evi
 - **Vercel:** Branch Tracking would not accept `main` until that branch had a deployment ("No deployments found for main"). A preview deployment of `main` at `38499ca` was created through the Vercel API (`dpl_Fwsv5vxEjCQV5fvA6Zs7JUa66k3G`) so the owner could save `main` as the production branch.
 - **Verification:** This entry's own merge into `main` should create a production deployment. That shows production now follows `main`.
 - **Status:** Waiting on owner to save Branch Tracking = `main`.
+
+### M-023 | 2026-11-07 | Move Ant Ling drafting and category suggestions to Ling-3.2-flash
+- **Source/trigger:** The client's content notes describe ProofLine as built with Univer SDK and Ling 3.2 Flash, which Ant Ling released on 5 November 2026. The owner chose to switch before writing the posts, so the posts can describe real results.
+- **Baseline before the switch:** two runs on the live site with Ling-3.1-flash and synthetic sample data, using accounts `plcheck11828b` and `plcheck2709c4`.
+  - Category suggestions: 444 tokens, first attempt, 4.4 s and 2.4 s. T-002 Operations, T-004 Logistics and T-005 Community came back high; T-006 Community came back low.
+  - Draft: 961 and 941 tokens, first attempt, 3.6 s and 3.9 s, 23 engine facts. Check figures passed and approval was recorded both times.
+- **Change:**
+  - `ANT_LING_DEFAULT_MODEL` is now `Ling-3.2-flash`. `ANT_LING_MODEL` still overrides it, and setting it back to `Ling-3.1-flash` rolls back without a code change.
+  - The default-model test, `.env.example` and the README were updated.
+  - Nothing else changes: same endpoint, prompts and validation.
+- **Status:** PR pending. The live check on 3.2 follows the merge.

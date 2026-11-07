@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://proofline-alpha.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-proofline--alpha.vercel.app-2B9A5A?style=flat-square"></a>
   <img alt="Univer Sheets and Docs 1.3.1" src="https://img.shields.io/badge/Univer-Sheets%20%2B%20Docs%201.3.1-2353E6?style=flat-square">
-  <img alt="Ant Ling Ling-3.1-flash" src="https://img.shields.io/badge/Ant%20Ling-Ling--3.1--flash-E8A33D?style=flat-square">
+  <img alt="Ant Ling Ling-3.2-flash" src="https://img.shields.io/badge/Ant%20Ling-Ling--3.2--flash-E8A33D?style=flat-square">
   <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-16181D?style=flat-square">
 </p>
 
@@ -106,7 +106,7 @@ The licensed preset loads only when `NEXT_PUBLIC_UNIVER_LICENSE` is set. That va
 
 ## Ant Ling
 
-Ant Ling (`Ling-3.1-flash` through Ant Ling's OpenAI-compatible API) runs on the server for two jobs. It never supplies a number.
+Ant Ling (`Ling-3.2-flash` through Ant Ling's OpenAI-compatible API; `Ling-3.1-flash` until 7 November 2026) runs on the server for two jobs. It never supplies a number.
 
 **Category suggestions.**
 - It receives only the ID, description and current label of the rows under review, plus the budget category names. It never receives amounts or files.
@@ -140,7 +140,7 @@ Without a database URL, data is stored in `.proofline-data/` (ignored by Git).
 | `NEXT_PUBLIC_UNIVER_LICENSE` | browser, build time | Contents of Univer `license.txt`; turns on the chart. Redeploy after changing it. |
 | `NEXT_PUBLIC_UNIVER_PRO_PREVIEW` | local only | Set to `1` to try licensed features without a license (Univer shows a watermark). |
 | `ANT_LING_API_KEY` | server | Enables report drafting. |
-| `ANT_LING_BASE_URL`, `ANT_LING_MODEL` | server, optional | Any OpenAI-compatible host serving Ling models. Defaults: `https://api.ant-ling.com/v1`, `Ling-3.1-flash`. |
+| `ANT_LING_BASE_URL`, `ANT_LING_MODEL` | server, optional | Any OpenAI-compatible host serving Ling models. Defaults: `https://api.ant-ling.com/v1`, `Ling-3.2-flash`. |
 | `DATABASE_URL` or `POSTGRES_URL` | server | PostgreSQL. Required on Vercel. |
 | `PROOFLINE_DATA_DIR` | server, optional | Folder for the local SQLite file. |
 

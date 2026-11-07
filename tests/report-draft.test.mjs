@@ -93,7 +93,7 @@ test('draftReport gives up after two rejected drafts', async () => {
 test('Ant Ling config is server-env only and defaults to the documented endpoint', () => {
   assert.equal(antLingConfig({}), null);
   const config = antLingConfig({ ANT_LING_API_KEY: ' key-123 ' });
-  assert.deepEqual(config, { apiKey: 'key-123', baseUrl: 'https://api.ant-ling.com/v1', model: 'Ling-3.1-flash' });
+  assert.deepEqual(config, { apiKey: 'key-123', baseUrl: 'https://api.ant-ling.com/v1', model: 'Ling-3.2-flash' });
   assert.equal(antLingConfig({ ANT_LING_API_KEY: 'k', ANT_LING_BASE_URL: 'https://openrouter.ai/api/v1/', ANT_LING_MODEL: 'inclusionai/x' }).baseUrl, 'https://openrouter.ai/api/v1');
   assert.throws(() => antLingConfig({ ANT_LING_API_KEY: 'k', ANT_LING_BASE_URL: 'http://insecure.example' }), /https/);
   assert.equal(antLingConfig({ ANT_LING_API_KEY: 'k', ANT_LING_BASE_URL: 'http://127.0.0.1:4010/v1' }).baseUrl, 'http://127.0.0.1:4010/v1');
