@@ -412,7 +412,7 @@ This file is the shared record for questions, issues, decisions, milestones, evi
   - Category suggestions: 432 and 437 tokens, first attempt, 3.7 s and 2.0 s. The picks matched the 3.1 runs.
   - Draft: 824 and 919 tokens (147 and 242 completion tokens, against 264–284 on 3.1), first attempt, 4.0 s and 3.1 s. Check figures passed and approval was recorded both times.
   - One 3.2 draft cited no per-category amounts (12 facts). Both said Outreach "exceeded" its limit, although Outreach has no budget.
-- **Client content:** six posts, a captioned 96-second walkthrough and a PDF were prepared for the client.
+- **Client content:** six posts, a captioned 90-second walkthrough and a PDF were prepared for the client.
   - They were recorded on a local build of the same code with sample data.
   - The Ant Ling stand-in replayed the exact live 3.2 replies: categorize `218295c517940732071984952eab6c` and draft `0b442eeb17940732204105499e7570`.
 - **Status:** The code default and README are on branch `ai/ling-3-2-flash`, waiting for push access. Once that branch is merged, the Vercel variable can be removed.
