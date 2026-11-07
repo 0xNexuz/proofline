@@ -42,6 +42,10 @@ ProofLine turns a budget and its transactions into a real, editable Univer sprea
 - The draft summary passed the number rule on the first try, with 24 figures inserted by the engine (960 tokens).
 - Check figures matched 24 of 24, and the approval was recorded in the workbook history.
 
+**Live check, 7 November 2026, after moving to Ling 3.2 Flash:** two runs, same sample data.
+- Category suggestions came back on the first try both times (432–437 tokens).
+- Both drafts passed the number rule on the first try (824–919 tokens), and both reports were checked and approved.
+
 ## Try it in two minutes
 
 1. Open `/app`. **Load sample** shows the workbook straight away, with no account needed.
