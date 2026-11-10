@@ -179,3 +179,7 @@ These are the honest gaps today:
 - Univer licensing: https://docs.univer.ai/guides/server-integration/license
 - Univer SDK skills: https://github.com/dream-num/skills
 - Ant Ling open platform: https://chat.ant-ling.com/open
+
+## Licence
+
+[MIT](LICENSE). Univer and the other libraries ProofLine uses keep their own licences. Univer's licensed features, such as charts, are covered by Univer's own terms.
